@@ -1,0 +1,31 @@
+{
+  // 当前格式版本为 3；demo.project-butler.json 保留为 v1 兼容测试集合。
+  "schemaVersion": 3,
+
+  // 项目集合名称，会显示在“项目集合”视图标题中。
+  "name": "我的项目集合",
+
+  "features": {
+    "tabs": {
+      "autoOrganize": true
+    }
+  },
+
+  // 可添加多个项目。所有 path 都相对于本文件所在目录，并统一使用 / 分隔。
+  "projects": [
+    {
+      // alias：项目在侧边栏中显示的别名，同一集合内不能重复。
+      "alias": "示例项目",
+
+      // path：项目文件夹或 .code-workspace 文件的相对路径，不要填写盘符绝对路径。
+      "path": "./example-project",
+
+      // type：可选 auto、folder、workspace；auto 会根据 .code-workspace 后缀判断。
+      "type": "folder",
+
+      // description 和 tags 都是可选字段，可用于补充项目用途。
+      "description": "请修改为项目说明",
+      "tags": ["示例"]
+    }
+  ]
+}

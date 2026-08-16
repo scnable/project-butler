@@ -1,0 +1,26 @@
+{
+  // schemaVersion（必填）：当前格式版本为 3。旧版 v1、v2 仍可兼容读取。
+  "schemaVersion": 3,
+
+  // name（可选）：集合名称，会与真实文件名一起显示在项目集合视图中。
+  "name": "我的项目集合",
+
+  // features（可选）：复制本集合文件后，另一位用户会获得相同的功能默认值。
+  "features": {
+    // tabs：标签页整理功能。
+    "tabs": {
+      // 是否自动按文件夹整理标签页；关闭后仍可手动整理当前标签组。
+      "autoOrganize": false
+    }
+  },
+
+  // projects（必填）：推荐使用项目集合视图中的“添加项目”按钮自动添加。
+  // 所有 path 都相对于本文件所在目录，并统一使用 / 分隔，不能填写绝对路径。
+  "projects": [
+    // alias（必填）：项目别名，同一集合内不能重复。
+    // path（必填）：例如 "./admin-web" 或 "./server/server.code-workspace"。
+    // type（可选）：auto、folder 或 workspace，默认 auto。
+    // description（可选）：项目用途说明。
+    // tags（可选）：字符串数组，例如 ["前端", "日常开发"]。
+  ]
+}

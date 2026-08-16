@@ -1,0 +1,24 @@
+{
+  // 格式版本：当前固定为 1，请勿修改。
+  "schemaVersion": 2,
+
+  // 项目集合名称，会显示在“项目集合”视图标题中。
+  "name": "我的项目集合",
+
+  // 可添加多个项目。所有 path 都相对于本文件所在目录，并统一使用 / 分隔。
+  "features": {
+    "tabs": {
+      "showOpenFileCount": true,
+      "groupingMode": "auto",
+      "minimumTabs": 2
+    }
+  },
+
+  "projects": [
+    // 推荐点击项目集合视图中的“添加项目”按钮自动添加。
+    // 手工添加时，每个条目支持以下字段：
+    // alias：侧边栏中显示的别名，同一集合内不能重复。
+    // path：文件夹或 .code-workspace 的相对路径，不要填写盘符绝对路径。
+    // type：可选 auto、folder、workspace；description 和 tags 为可选字段。
+  ]
+}

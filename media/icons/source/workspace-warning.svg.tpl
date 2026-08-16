@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <rect x="3" y="4" width="18" height="15" rx="2.5" stroke="{{primary}}" stroke-width="2.7"/>
+  <path d="M9 4v15M9 9h12" stroke="{{primary}}" stroke-width="2.7"/>
+  <path d="m17.5 10 4 7.5h-8zM17.5 13v1.5M17.5 16.5h.01" stroke="{{accent}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

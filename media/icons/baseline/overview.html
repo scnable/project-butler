@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>统一标识视觉基线</title>
+  <style>
+    :root { color-scheme: light dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 28px; background: #181818; color: #f2f2f2; }
+    h1 { margin: 0 0 6px; font-size: 24px; }
+    .intro { margin: 0 0 24px; color: #b9b9b9; }
+    .themes { display: grid; gap: 20px; }
+    .theme { border: 1px solid #555; border-radius: 12px; overflow: hidden; }
+    .theme h2 { margin: 0; padding: 12px 16px; font-size: 16px; border-bottom: 1px solid currentColor; }
+    .matrix { display: grid; grid-template-columns: 150px repeat(4, minmax(180px, 1fr)); gap: 1px; padding: 1px; background: color-mix(in srgb, currentColor 18%, transparent); }
+    .cell { min-height: 92px; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px; background: var(--surface); }
+    .name { justify-content: flex-start; font-weight: 650; }
+    .group { grid-column: 1 / -1; min-height: 44px; justify-content: flex-start; padding: 10px 16px; font-weight: 750; letter-spacing: .04em; background: color-mix(in srgb, var(--surface) 88%, currentColor 12%); }
+    .light { --surface: #f3f3f3; background: #f3f3f3; color: #3b3b3b; }
+    .dark { --surface: #1f1f1f; background: #1f1f1f; color: #d4d4d4; }
+    .hc { --surface: #000; background: #000; color: #fff; border-color: #fff; }
+    .sizes { font-size: 12px; opacity: .72; }
+    .variants { display: grid; gap: 8px; }
+    .variant { display: grid; grid-template-columns: 42px repeat(4, auto); align-items: center; gap: 8px; }
+    .variant-label { font-size: 11px; opacity: .72; text-align: right; }
+    .sample { position: relative; display: inline-grid; place-items: center; border-radius: 5px; }
+    .light .sample.selected { background: #cce8ff; color: #1f1f1f; outline: 2px solid #0078d4; outline-offset: 1px; }
+    .dark .sample.selected { background: #37373d; color: #fff; outline: 2px solid #75beff; outline-offset: 1px; }
+    .hc .sample.selected { background: #000; color: #fff; outline: 2px solid #fff; outline-offset: 1px; }
+    .sample.disabled { opacity: .38; }
+    .sample.warning::after { content: ""; position: absolute; right: -4px; bottom: -4px; width: 8px; height: 8px; background: #f0a500; -webkit-mask: url('../state/warning.svg') center / contain no-repeat; mask: url('../state/warning.svg') center / contain no-repeat; }
+    .icon { display: block; width: var(--size); height: var(--size); }
+    .icon.monochrome { background: currentColor; -webkit-mask: var(--asset) center / contain no-repeat; mask: var(--asset) center / contain no-repeat; }
+    .icon.color { object-fit: contain; }
+    .legend { display: flex; flex-wrap: wrap; gap: 18px; padding: 12px 16px 16px; font-size: 13px; }
+    .legend span { display: inline-flex; align-items: center; gap: 7px; }
+    @media (max-width: 1120px) { body { padding: 12px; } .theme { overflow-x: auto; } .matrix { min-width: 930px; } }
+  </style>
+</head>
+<body>
+  <h1>统一标识视觉基线</h1>
+  <p class="intro">24×24 统一网格 · Source Insight 式大纲类别色 · 单一字形不跨色拆分 · 复合对象按语义分层 · 高对比度回退单色</p>
+  <main id="themes" class="themes"></main>
+  <script>
+    const iconGroups = [
+      ['产品与项目', [
+        ['product', '产品主标识'], ['catalog', '项目集合'], ['project', '项目'],
+        ['workspace', 'VS Code 工作区'], ['file', '代码文件'],
+      ]],
+      ['配置、资源与边界', [
+        ['config', '配置摘要'], ['preferences', '个人默认配置'], ['resources', '项目与资源'],
+        ['external-file', '工作区外文件'], ['context-member', '集合内项目'],
+        ['context-external', '集合外项目'], ['project-warning', '不可用项目'],
+        ['workspace-warning', '不可用工作区'],
+      ]],
+      ['代码结构', [
+        ['symbol-file', '文件符号'], ['symbol-module', '模块'], ['symbol-namespace', '命名空间'],
+        ['symbol-package', '包'], ['symbol-class', '类 C'], ['symbol-interface', '接口 I'],
+        ['symbol-struct', '结构体 S'], ['symbol-enum', '枚举 E'], ['symbol-enum-member', '枚举成员'],
+        ['symbol-type-parameter', '类型参数 T'], ['symbol-generic', '未知符号'],
+      ]],
+      ['可调用对象与成员', [
+        ['symbol-function', '函数 F'], ['symbol-method', '方法 M'], ['symbol-constructor', '构造函数 C'],
+        ['symbol-property', '属性 P'], ['symbol-field', '字段'], ['symbol-event', '事件'],
+        ['symbol-operator', '运算符'],
+      ]],
+      ['值与数据', [
+        ['symbol-variable', '变量 V'], ['symbol-constant', '常量'], ['symbol-string', '字符串'],
+        ['symbol-number', '数字'], ['symbol-boolean', '布尔值'], ['symbol-array', '数组'],
+        ['symbol-object', '对象'], ['symbol-key', '键'], ['symbol-null', '空值'],
+      ]],
+      ['预处理器', [
+        ['symbol-preprocessor-region', '条件编译区域 #'],
+        ['symbol-preprocessor-branch', '条件编译分支 #'],
+        ['symbol-macro-definition', '宏定义 #D'],
+      ]],
+    ];
+    const sizes = [16, 20, 24, 32];
+    const requestedTheme = new URLSearchParams(location.search).get('theme');
+    const requestedGroup = Number.parseInt(new URLSearchParams(location.search).get('group') ?? '', 10);
+    const visibleIconGroups = Number.isInteger(requestedGroup)
+      ? iconGroups.filter((_, index) => index === requestedGroup)
+      : iconGroups;
+    const themes = [['light', '浅色'], ['dark', '深色'], ['hc', '高对比度']]
+      .filter(([theme]) => requestedTheme === null || requestedTheme === theme);
+    const root = document.querySelector('#themes');
+    const sample = (iconClass, asset, size, state = '') => `<span class="sample ${state}" style="--size:${size}px"><${iconClass === 'color' ? 'img' : 'i'} class="icon ${iconClass}" ${iconClass === 'color' ? `src="${asset}" alt=""` : `style="--asset:url('${asset}')"`}></${iconClass === 'color' ? 'img' : 'i'}></span>`;
+    for (const [themeClass, themeLabel] of themes) {
+      const section = document.createElement('section');
+      section.className = `theme ${themeClass}`;
+      section.innerHTML = `<h2>${themeLabel}</h2><div class="matrix"><div class="cell name">语义</div>${sizes.map(size => `<div class="cell sizes">${size}px</div>`).join('')}</div><div class="legend"><span>每行依次为：普通、选中、禁用、警告</span><span>M：主题单色</span><span>C：语义彩色；高对比度回退单色</span></div>`;
+      const matrix = section.querySelector('.matrix');
+      for (const [groupLabel, icons] of visibleIconGroups) {
+        matrix.insertAdjacentHTML('beforeend', `<div class="cell group">${groupLabel}</div>`);
+        for (const [id, label] of icons) {
+          matrix.insertAdjacentHTML('beforeend', `<div class="cell name">${label}</div>`);
+          for (const size of sizes) {
+            const monochromeAsset = `./${id}.svg`;
+            const colorAsset = themeClass === 'hc' ? monochromeAsset : `./color/${themeClass}/${id}.svg`;
+            const monochromeSamples = ['', 'selected', 'disabled', 'warning'].map(state => sample('monochrome', monochromeAsset, size, state)).join('');
+            const colorSamples = ['', 'selected', 'disabled', 'warning'].map(state => sample(themeClass === 'hc' ? 'monochrome' : 'color', colorAsset, size, state)).join('');
+            matrix.insertAdjacentHTML('beforeend', `<div class="cell"><div class="variants"><div class="variant"><span class="variant-label">M</span>${monochromeSamples}</div><div class="variant"><span class="variant-label">${themeClass === 'hc' ? '回退' : 'C'}</span>${colorSamples}</div></div></div>`);
+          }
+        }
+      }
+      root.append(section);
+    }
+  </script>
+</body>
+</html>

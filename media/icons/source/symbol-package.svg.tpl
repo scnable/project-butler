@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <rect x="3.5" y="6" width="17" height="14" rx="2" stroke="{{primary}}" stroke-width="2.7"/>
+  <path d="M3.5 10h17M9 6v4M15 6v4M12 10v10" stroke="{{primary}}" stroke-width="2.7" stroke-linejoin="round"/>
+</svg>

@@ -1,0 +1,16 @@
+{
+  "folders": [
+    {
+      "name": "工作区一",
+      "path": "workspace-one"
+    },
+    {
+      "name": "工作区二",
+      "path": "workspace-two"
+    }
+  ],
+  "settings": {
+    "workbench.editor.decorations.colors": true,
+    "workbench.editor.decorations.badges": true
+  }
+}

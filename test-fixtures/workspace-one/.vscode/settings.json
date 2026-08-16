@@ -1,0 +1,15 @@
+{
+  "workbench.editor.decorations.colors": true,
+  "workbench.editor.decorations.badges": true,
+  "chat.disableAIFeatures": false,
+  "projectManager.tabs.autoOrganize": false,
+  "files.exclude": {
+    "**/*.txt": true
+  },
+  "search.exclude": {
+    "**/*.txt": true
+  },
+  "files.watcherExclude": {
+    "**/*.txt": true
+  }
+}

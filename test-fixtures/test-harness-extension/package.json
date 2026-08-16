@@ -1,0 +1,13 @@
+{
+  "name": "project-butler-test-harness",
+  "displayName": "Project Butler Test Harness",
+  "version": "0.0.1",
+  "publisher": "local-development",
+  "engines": {
+    "vscode": "^1.88.0"
+  },
+  "main": "./extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ]
+}

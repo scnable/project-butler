@@ -1,0 +1,282 @@
+{
+  "$schema": "../icon-manifest.schema.json",
+  "version": 5,
+  "grid": "24x24",
+  "strokeWidth": 2.7,
+  "cornerStyle": "round",
+  "stateBadgeAnchor": "right-bottom",
+  "sourceRoot": "../source",
+  "palette": "../palette.json",
+  "colorStrategy": {
+    "role": "semantic-auxiliary",
+    "themes": ["light", "dark"],
+    "highContrast": "monochrome",
+    "activityBar": "monochrome"
+  },
+  "icons": [
+    {
+      "id": "product",
+      "label": "产品主标识",
+      "source": "product.svg.tpl",
+      "files": { "monochrome": "product.svg", "light": "color/light/product.svg", "dark": "color/dark/product.svg" }
+    },
+    {
+      "id": "project",
+      "label": "项目",
+      "source": "project.svg.tpl",
+      "files": { "monochrome": "project.svg", "light": "color/light/project.svg", "dark": "color/dark/project.svg" }
+    },
+    {
+      "id": "file",
+      "label": "文件",
+      "source": "file.svg.tpl",
+      "files": { "monochrome": "file.svg", "light": "color/light/file.svg", "dark": "color/dark/file.svg" }
+    },
+    {
+      "id": "symbol-function",
+      "label": "函数",
+      "source": "symbol-function.svg.tpl",
+      "files": { "monochrome": "symbol-function.svg", "light": "color/light/symbol-function.svg", "dark": "color/dark/symbol-function.svg" }
+    },
+    {
+      "id": "symbol-method",
+      "label": "方法",
+      "source": "symbol-method.svg.tpl",
+      "files": { "monochrome": "symbol-method.svg", "light": "color/light/symbol-method.svg", "dark": "color/dark/symbol-method.svg" }
+    },
+    {
+      "id": "symbol-class",
+      "label": "类",
+      "source": "symbol-class.svg.tpl",
+      "files": { "monochrome": "symbol-class.svg", "light": "color/light/symbol-class.svg", "dark": "color/dark/symbol-class.svg" }
+    },
+    {
+      "id": "symbol-generic",
+      "label": "未知符号",
+      "source": "symbol-generic.svg.tpl",
+      "files": { "monochrome": "symbol-generic.svg", "light": "color/light/symbol-generic.svg", "dark": "color/dark/symbol-generic.svg" }
+    },
+    {
+      "id": "catalog",
+      "label": "项目集合",
+      "source": "catalog.svg.tpl",
+      "files": { "monochrome": "catalog.svg", "light": "color/light/catalog.svg", "dark": "color/dark/catalog.svg" }
+    },
+    {
+      "id": "workspace",
+      "label": "VS Code 工作区",
+      "source": "workspace.svg.tpl",
+      "files": { "monochrome": "workspace.svg", "light": "color/light/workspace.svg", "dark": "color/dark/workspace.svg" }
+    },
+    {
+      "id": "config",
+      "label": "配置摘要",
+      "source": "config.svg.tpl",
+      "files": { "monochrome": "config.svg", "light": "color/light/config.svg", "dark": "color/dark/config.svg" }
+    },
+    {
+      "id": "preferences",
+      "label": "个人默认配置",
+      "source": "preferences.svg.tpl",
+      "files": { "monochrome": "preferences.svg", "light": "color/light/preferences.svg", "dark": "color/dark/preferences.svg" }
+    },
+    {
+      "id": "resources",
+      "label": "项目与资源",
+      "source": "resources.svg.tpl",
+      "files": { "monochrome": "resources.svg", "light": "color/light/resources.svg", "dark": "color/dark/resources.svg" }
+    },
+    {
+      "id": "external-file",
+      "label": "工作区外文件",
+      "source": "external-file.svg.tpl",
+      "files": { "monochrome": "external-file.svg", "light": "color/light/external-file.svg", "dark": "color/dark/external-file.svg" }
+    },
+    {
+      "id": "context-member",
+      "label": "集合内项目上下文",
+      "source": "context-member.svg.tpl",
+      "files": { "monochrome": "context-member.svg", "light": "color/light/context-member.svg", "dark": "color/dark/context-member.svg" }
+    },
+    {
+      "id": "context-external",
+      "label": "集合外项目上下文",
+      "source": "context-external.svg.tpl",
+      "files": { "monochrome": "context-external.svg", "light": "color/light/context-external.svg", "dark": "color/dark/context-external.svg" }
+    },
+    {
+      "id": "project-warning",
+      "label": "不可用文件夹项目",
+      "source": "project-warning.svg.tpl",
+      "files": { "monochrome": "project-warning.svg", "light": "color/light/project-warning.svg", "dark": "color/dark/project-warning.svg" }
+    },
+    {
+      "id": "workspace-warning",
+      "label": "不可用工作区项目",
+      "source": "workspace-warning.svg.tpl",
+      "files": { "monochrome": "workspace-warning.svg", "light": "color/light/workspace-warning.svg", "dark": "color/dark/workspace-warning.svg" }
+    },
+    {
+      "id": "symbol-file",
+      "label": "文件符号",
+      "source": "symbol-file.svg.tpl",
+      "files": { "monochrome": "symbol-file.svg", "light": "color/light/symbol-file.svg", "dark": "color/dark/symbol-file.svg" }
+    },
+    {
+      "id": "symbol-module",
+      "label": "模块符号",
+      "source": "symbol-module.svg.tpl",
+      "files": { "monochrome": "symbol-module.svg", "light": "color/light/symbol-module.svg", "dark": "color/dark/symbol-module.svg" }
+    },
+    {
+      "id": "symbol-namespace",
+      "label": "命名空间符号",
+      "source": "symbol-namespace.svg.tpl",
+      "files": { "monochrome": "symbol-namespace.svg", "light": "color/light/symbol-namespace.svg", "dark": "color/dark/symbol-namespace.svg" }
+    },
+    {
+      "id": "symbol-package",
+      "label": "包符号",
+      "source": "symbol-package.svg.tpl",
+      "files": { "monochrome": "symbol-package.svg", "light": "color/light/symbol-package.svg", "dark": "color/dark/symbol-package.svg" }
+    },
+    {
+      "id": "symbol-property",
+      "label": "属性符号",
+      "source": "symbol-property.svg.tpl",
+      "files": { "monochrome": "symbol-property.svg", "light": "color/light/symbol-property.svg", "dark": "color/dark/symbol-property.svg" }
+    },
+    {
+      "id": "symbol-field",
+      "label": "字段符号",
+      "source": "symbol-field.svg.tpl",
+      "files": { "monochrome": "symbol-field.svg", "light": "color/light/symbol-field.svg", "dark": "color/dark/symbol-field.svg" }
+    },
+    {
+      "id": "symbol-constructor",
+      "label": "构造函数符号",
+      "source": "symbol-constructor.svg.tpl",
+      "files": { "monochrome": "symbol-constructor.svg", "light": "color/light/symbol-constructor.svg", "dark": "color/dark/symbol-constructor.svg" }
+    },
+    {
+      "id": "symbol-enum",
+      "label": "枚举符号",
+      "source": "symbol-enum.svg.tpl",
+      "files": { "monochrome": "symbol-enum.svg", "light": "color/light/symbol-enum.svg", "dark": "color/dark/symbol-enum.svg" }
+    },
+    {
+      "id": "symbol-interface",
+      "label": "接口符号",
+      "source": "symbol-interface.svg.tpl",
+      "files": { "monochrome": "symbol-interface.svg", "light": "color/light/symbol-interface.svg", "dark": "color/dark/symbol-interface.svg" }
+    },
+    {
+      "id": "symbol-variable",
+      "label": "变量符号",
+      "source": "symbol-variable.svg.tpl",
+      "files": { "monochrome": "symbol-variable.svg", "light": "color/light/symbol-variable.svg", "dark": "color/dark/symbol-variable.svg" }
+    },
+    {
+      "id": "symbol-constant",
+      "label": "常量符号",
+      "source": "symbol-constant.svg.tpl",
+      "files": { "monochrome": "symbol-constant.svg", "light": "color/light/symbol-constant.svg", "dark": "color/dark/symbol-constant.svg" }
+    },
+    {
+      "id": "symbol-string",
+      "label": "字符串符号",
+      "source": "symbol-string.svg.tpl",
+      "files": { "monochrome": "symbol-string.svg", "light": "color/light/symbol-string.svg", "dark": "color/dark/symbol-string.svg" }
+    },
+    {
+      "id": "symbol-number",
+      "label": "数字符号",
+      "source": "symbol-number.svg.tpl",
+      "files": { "monochrome": "symbol-number.svg", "light": "color/light/symbol-number.svg", "dark": "color/dark/symbol-number.svg" }
+    },
+    {
+      "id": "symbol-boolean",
+      "label": "布尔值符号",
+      "source": "symbol-boolean.svg.tpl",
+      "files": { "monochrome": "symbol-boolean.svg", "light": "color/light/symbol-boolean.svg", "dark": "color/dark/symbol-boolean.svg" }
+    },
+    {
+      "id": "symbol-array",
+      "label": "数组符号",
+      "source": "symbol-array.svg.tpl",
+      "files": { "monochrome": "symbol-array.svg", "light": "color/light/symbol-array.svg", "dark": "color/dark/symbol-array.svg" }
+    },
+    {
+      "id": "symbol-object",
+      "label": "对象符号",
+      "source": "symbol-object.svg.tpl",
+      "files": { "monochrome": "symbol-object.svg", "light": "color/light/symbol-object.svg", "dark": "color/dark/symbol-object.svg" }
+    },
+    {
+      "id": "symbol-key",
+      "label": "键符号",
+      "source": "symbol-key.svg.tpl",
+      "files": { "monochrome": "symbol-key.svg", "light": "color/light/symbol-key.svg", "dark": "color/dark/symbol-key.svg" }
+    },
+    {
+      "id": "symbol-null",
+      "label": "空值符号",
+      "source": "symbol-null.svg.tpl",
+      "files": { "monochrome": "symbol-null.svg", "light": "color/light/symbol-null.svg", "dark": "color/dark/symbol-null.svg" }
+    },
+    {
+      "id": "symbol-enum-member",
+      "label": "枚举成员符号",
+      "source": "symbol-enum-member.svg.tpl",
+      "files": { "monochrome": "symbol-enum-member.svg", "light": "color/light/symbol-enum-member.svg", "dark": "color/dark/symbol-enum-member.svg" }
+    },
+    {
+      "id": "symbol-struct",
+      "label": "结构体符号",
+      "source": "symbol-struct.svg.tpl",
+      "files": { "monochrome": "symbol-struct.svg", "light": "color/light/symbol-struct.svg", "dark": "color/dark/symbol-struct.svg" }
+    },
+    {
+      "id": "symbol-event",
+      "label": "事件符号",
+      "source": "symbol-event.svg.tpl",
+      "files": { "monochrome": "symbol-event.svg", "light": "color/light/symbol-event.svg", "dark": "color/dark/symbol-event.svg" }
+    },
+    {
+      "id": "symbol-operator",
+      "label": "运算符符号",
+      "source": "symbol-operator.svg.tpl",
+      "files": { "monochrome": "symbol-operator.svg", "light": "color/light/symbol-operator.svg", "dark": "color/dark/symbol-operator.svg" }
+    },
+    {
+      "id": "symbol-type-parameter",
+      "label": "类型参数符号",
+      "source": "symbol-type-parameter.svg.tpl",
+      "files": { "monochrome": "symbol-type-parameter.svg", "light": "color/light/symbol-type-parameter.svg", "dark": "color/dark/symbol-type-parameter.svg" }
+    },
+    {
+      "id": "symbol-preprocessor-region",
+      "label": "条件编译区域符号",
+      "source": "symbol-preprocessor-region.svg.tpl",
+      "files": { "monochrome": "symbol-preprocessor-region.svg", "light": "color/light/symbol-preprocessor-region.svg", "dark": "color/dark/symbol-preprocessor-region.svg" }
+    },
+    {
+      "id": "symbol-preprocessor-branch",
+      "label": "条件编译分支符号",
+      "source": "symbol-preprocessor-branch.svg.tpl",
+      "files": { "monochrome": "symbol-preprocessor-branch.svg", "light": "color/light/symbol-preprocessor-branch.svg", "dark": "color/dark/symbol-preprocessor-branch.svg" }
+    },
+    {
+      "id": "symbol-macro-definition",
+      "label": "宏定义符号",
+      "source": "symbol-macro-definition.svg.tpl",
+      "files": { "monochrome": "symbol-macro-definition.svg", "light": "color/light/symbol-macro-definition.svg", "dark": "color/dark/symbol-macro-definition.svg" }
+    }
+  ],
+  "states": [
+    { "id": "warning", "label": "警告", "file": "../state/warning.svg", "anchor": "right-bottom" },
+    { "id": "edited", "label": "已编辑", "file": "../state/edited.svg", "anchor": "right-bottom" },
+    { "id": "long-function", "label": "长函数", "file": "../state/long-function.svg", "anchor": "right-top" },
+    { "id": "disabled", "label": "禁用", "file": "../state/disabled.svg", "anchor": "overlay" }
+  ]
+}

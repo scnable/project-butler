@@ -1,0 +1,22 @@
+{
+  "$schema": "../../schemas/project-butler.catalog.schema.json",
+  "schemaVersion": 3,
+  "name": "配置",
+  "features": {
+    "tabs": {
+      "autoOrganize": false
+    }
+  },
+
+  "projects": [
+    { "alias": "测试项目一", "path": ".", "type": "folder", "description": "当前调试工作区" },
+    { "alias": "测试项目二", "path": "../workspace-two", "type": "folder", "tags": ["多项目", "便携"] },
+    { "alias": "多根工作区", "path": "../multi-root.code-workspace", "type": "workspace" },
+    { "alias": "失效项目示例", "path": "../not-created", "type": "folder", "description": "用于验证路径警告" },
+    {
+      "alias": "three",
+      "path": "../three",
+      "type": "folder"
+    }
+  ]
+}

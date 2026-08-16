@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local-development.invalid/schemas/project-butler.catalog.schema.json",
+  "title": "项目管家项目集合",
+  "description": "以别名组织多个可迁移项目，并在项目管家侧边栏中快速打开。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "projects"],
+  "properties": {
+    "$schema": { "type": "string", "description": "可选的 JSON Schema 地址。" },
+    "schemaVersion": {
+      "type": "integer",
+      "enum": [1, 2, 3],
+      "description": "项目集合格式版本。v1、v2 可兼容读取；新建集合使用 v3。"
+    },
+    "name": { "type": "string", "minLength": 1, "description": "项目集合名称。" },
+    "features": {
+      "type": "object",
+      "description": "可随集合文件迁移的功能默认配置，需要 schemaVersion 2 或 3。"
+    },
+    "projects": {
+      "type": "array",
+      "description": "集合中的项目，alias 在同一个集合内应保持唯一。",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["alias", "path"],
+        "properties": {
+          "alias": { "type": "string", "minLength": 1, "maxLength": 64, "description": "项目别名。" },
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!/|[A-Za-z][A-Za-z0-9+.-]*:)(?!.*\\\\).+$",
+            "description": "相对于集合文件所在目录的路径，统一使用 / 分隔。"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["auto", "folder", "workspace"],
+            "default": "auto",
+            "description": "auto 会根据 .code-workspace 后缀判断类型。"
+          },
+          "description": { "type": "string", "minLength": 1, "description": "项目用途说明。" },
+          "tags": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "uniqueItems": true,
+            "description": "可选的项目标签。"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "featuresV2": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tabs": {
+          "type": "object",
+          "description": "v2 标签页配置，仅用于兼容旧集合。",
+          "additionalProperties": false,
+          "properties": {
+            "showOpenFileCount": { "type": "boolean", "default": true, "deprecated": true },
+            "groupingMode": {
+              "type": "string",
+              "enum": ["off", "prompt", "auto"],
+              "default": "prompt",
+              "deprecated": true
+            },
+            "minimumTabs": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 100,
+              "default": 8,
+              "deprecated": true
+            }
+          }
+        }
+      }
+    },
+    "featuresV3": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tabs": {
+          "type": "object",
+          "description": "标签页整理功能。",
+          "additionalProperties": false,
+          "properties": {
+            "autoOrganize": {
+              "type": "boolean",
+              "default": false,
+              "description": "是否自动按文件夹整理标签页；关闭后仍可手动整理。"
+            }
+          }
+        },
+        "symbolOutline": {
+          "type": "object",
+          "description": "函数大纲功能。集合内项目使用这里的共享值；工作区显式覆盖优先，全局个人设置仅作回退。",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": ["native", "enhanced", "both"],
+              "default": "both",
+              "enumDescriptions": [
+                "仅使用 VS Code 原生大纲。",
+                "使用增强函数大纲。",
+                "同时使用原生大纲和增强函数大纲。"
+              ],
+              "description": "当前项目使用的大纲模式。"
+            }
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "schemaVersion": { "const": 1 } } },
+      "then": { "properties": { "features": false } }
+    },
+    {
+      "if": { "properties": { "schemaVersion": { "const": 2 } } },
+      "then": { "properties": { "features": { "$ref": "#/$defs/featuresV2" } } }
+    },
+    {
+      "if": { "properties": { "schemaVersion": { "const": 3 } } },
+      "then": { "properties": { "features": { "$ref": "#/$defs/featuresV3" } } }
+    }
+  ]
+}

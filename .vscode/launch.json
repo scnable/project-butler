@@ -1,0 +1,34 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "运行项目管家扩展",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}",
+        "${workspaceFolder}/test-fixtures/workspace-one"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
+      ],
+      "preLaunchTask": "npm: compile"
+    },
+    {
+      "name": "运行扩展宿主集成测试",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--disable-extensions",
+        "--disable-workspace-trust",
+        "--extensionDevelopmentPath=${workspaceFolder}",
+        "${workspaceFolder}/test-fixtures/workspace-one"
+      ],
+      "testConfiguration": "${workspaceFolder}/.vscode-test.mjs",
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
+      ],
+      "preLaunchTask": "npm: compile"
+    }
+  ]
+}

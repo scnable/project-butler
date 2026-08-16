@@ -1,0 +1,11 @@
+{
+    "files.exclude": {
+        "workspace-one/generated/result.json": true
+    },
+    "search.exclude": {
+        "workspace-one/generated/result.json": true
+    },
+    "files.watcherExclude": {
+        "workspace-one/generated/result.json": true
+    }
+}

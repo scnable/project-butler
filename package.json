@@ -1,0 +1,776 @@
+{
+  "name": "project-butler",
+  "displayName": "项目管家",
+  "description": "增强 VS Code 的项目切换、代码浏览、标签组织和便携开发设置。",
+  "version": "0.7.5",
+  "publisher": "local-development",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/scnable/project-butler.git"
+  },
+  "engines": {
+    "vscode": "^1.88.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "project",
+    "workspace",
+    "tabs",
+    "navigation",
+    "exclude",
+    "项目管理",
+    "代码浏览"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished",
+    "onLanguage:jsonc",
+    "onView:projectManager.projectsView",
+    "onView:projectManager.configurationView",
+    "onView:projectManager.symbolOutlineView",
+    "onView:projectManager.openedFilesView",
+    "onView:projectManager.enhancedSymbolOutlineView"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "jsonc",
+        "aliases": [
+          "JSON with Comments"
+        ],
+        "extensions": [
+          ".project-butler.json"
+        ],
+        "configuration": "./schemas/project-butler.language-configuration.json"
+      }
+    ],
+    "jsonValidation": [
+      {
+        "fileMatch": "*.project-butler.json",
+        "url": "./schemas/project-butler.catalog.schema.json"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "projectManager",
+          "title": "项目管家",
+          "icon": "media/icons/baseline/product.svg"
+        }
+      ]
+    },
+    "views": {
+      "projectManager": [
+        {
+          "id": "projectManager.projectsView",
+          "name": "项目集合",
+          "contextualTitle": "项目管家"
+        },
+        {
+          "id": "projectManager.configurationView",
+          "name": "配置",
+          "contextualTitle": "项目管家",
+          "visibility": "visible"
+        },
+        {
+          "id": "projectManager.symbolOutlineView",
+          "name": "增强函数大纲",
+          "contextualTitle": "代码浏览",
+          "type": "webview",
+          "when": "projectManager.symbolOutlineEnhancedEnabled",
+          "visibility": "visible"
+        }
+      ],
+      "explorer": [
+        {
+          "id": "projectManager.openedFilesView",
+          "name": "已打开文件目录",
+          "contextualTitle": "代码浏览",
+          "when": "projectManager.openedFilesDirectoryTreeEnabled",
+          "visibility": "visible"
+        },
+        {
+          "id": "projectManager.enhancedSymbolOutlineView",
+          "name": "增强函数大纲（旧位置）",
+          "contextualTitle": "代码浏览",
+          "type": "webview",
+          "when": "false",
+          "visibility": "hidden"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "projectManager.projectsView",
+        "contents": "尚无项目集合。\n[添加项目并创建集合](command:projectManager.addProjectToCatalog)\n[导入已有集合](command:projectManager.importCatalog)\n\n集合、项目别名和功能配置由插件内部管理，不需要创建或编辑配置文件。迁移到其他设备时使用导入、导出。",
+        "when": "!projectManager.hasCatalogs && !projectManager.catalogInitializing"
+      },
+      {
+        "view": "projectManager.projectsView",
+        "contents": "当前未选择项目集合。\n[选择已有集合](command:projectManager.selectCatalog)\n[添加项目到集合](command:projectManager.addProjectToCatalog)\n[导入其他集合](command:projectManager.importCatalog)",
+        "when": "projectManager.hasCatalogs && !projectManager.hasActiveCatalog && !projectManager.catalogInitializing"
+      }
+    ],
+    "commands": [
+      {
+        "command": "projectManager.organizeCurrentTabGroup",
+        "title": "项目管家: 将非项目标签移到末尾",
+        "category": "项目管家",
+        "icon": "$(arrow-right)"
+      },
+      {
+        "command": "projectManager.focusOpenedFile",
+        "title": "聚焦已打开文件",
+        "category": "项目管家"
+      },
+      {
+        "command": "projectManager.collapseOpenedFilesNode",
+        "title": "折叠此目录",
+        "category": "项目管家",
+        "icon": "$(fold)"
+      },
+      {
+        "command": "projectManager.expandOpenedFilesNode",
+        "title": "展开此目录",
+        "category": "项目管家",
+        "icon": "$(unfold)"
+      },
+      {
+        "command": "projectManager.collapseAllOpenedFiles",
+        "title": "折叠全部目录",
+        "category": "项目管家",
+        "icon": "$(collapse-all)"
+      },
+      {
+        "command": "projectManager.expandAllOpenedFiles",
+        "title": "展开全部目录",
+        "category": "项目管家",
+        "icon": "$(expand-all)"
+      },
+      {
+        "command": "projectManager.hideNativeOpenEditors",
+        "title": "隐藏原生打开的编辑器",
+        "category": "项目管家"
+      },
+      {
+        "command": "projectManager.restoreNativeOpenEditors",
+        "title": "恢复原生打开的编辑器",
+        "category": "项目管家"
+      },
+      {
+        "command": "projectManager.excludeResources",
+        "title": "项目管家: 屏蔽所选资源（目录、搜索与监控）",
+        "category": "项目管家",
+        "icon": "$(eye-closed)"
+      },
+      {
+        "command": "projectManager.excludeSameFileType",
+        "title": "项目管家: 屏蔽同类型文件（按扩展名）",
+        "category": "项目管家",
+        "icon": "$(file-binary)"
+      },
+      {
+        "command": "projectManager.showExternalFiles",
+        "title": "项目管家: 查看工作区外文件",
+        "category": "项目管家",
+        "icon": "$(warning)"
+      },
+      {
+        "command": "projectManager.manageExclusions",
+        "title": "项目管家: 管理/取消屏蔽",
+        "category": "项目管家",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "projectManager.diagnoseActiveFile",
+        "title": "项目管家: 诊断当前文件归属",
+        "category": "项目管家",
+        "icon": "$(warning)"
+      },
+      {
+        "command": "projectManager.addProjectToCatalog",
+        "title": "项目管家: 添加项目到集合",
+        "category": "项目管家",
+        "icon": "$(add)"
+      },
+      {
+        "command": "projectManager.selectCatalog",
+        "title": "项目管家: 选择项目集合",
+        "category": "项目管家",
+        "icon": "$(library)"
+      },
+      {
+        "command": "projectManager.importCatalog",
+        "title": "项目管家: 导入项目集合",
+        "category": "项目管家",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "projectManager.importLegacyCatalog",
+        "title": "项目管家: 导入旧项目集合",
+        "category": "项目管家",
+        "icon": "$(history)"
+      },
+      {
+        "command": "projectManager.exportCatalog",
+        "title": "项目管家: 导出项目集合",
+        "category": "项目管家",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "projectManager.exitCatalog",
+        "title": "项目管家: 退出当前项目集合",
+        "category": "项目管家",
+        "icon": "$(sign-out)"
+      },
+      {
+        "command": "projectManager.configurePersonalSetting",
+        "title": "项目管家: 修改侧栏配置",
+        "category": "项目管家",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "projectManager.createCatalogTemplate",
+        "title": "项目管家: 添加项目并创建集合（兼容入口）",
+        "category": "项目管家",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "projectManager.openCatalogFile",
+        "title": "项目管家: 导入项目集合文件（兼容入口）",
+        "category": "项目管家",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "projectManager.openCatalogSource",
+        "title": "项目管家: 说明当前集合存储方式",
+        "category": "项目管家",
+        "icon": "$(json)"
+      },
+      {
+        "command": "projectManager.refreshProjects",
+        "title": "项目管家: 刷新项目集合",
+        "category": "项目管家",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "projectManager.closeCatalog",
+        "title": "项目管家: 退出当前项目集合（兼容入口）",
+        "category": "项目管家",
+        "icon": "$(close)"
+      },
+      {
+        "command": "projectManager.openSettings",
+        "title": "项目管家: 打开插件设置",
+        "category": "项目管家",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "projectManager.configureCatalogTabSetting",
+        "title": "项目管家: 修改集合标签页设置",
+        "category": "项目管家",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "projectManager.configureCatalogOutlineMode",
+        "title": "项目管家: 修改集合函数大纲模式",
+        "category": "项目管家",
+        "icon": "$(symbol-method)"
+      },
+      {
+        "command": "projectManager.refreshSymbolOutline",
+        "title": "项目管家: 刷新当前文件函数大纲",
+        "category": "项目管家",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "projectManager.selectSymbolOutlineAppearance",
+        "title": "项目管家: 选择函数大纲外观",
+        "category": "项目管家",
+        "icon": "$(symbol-color)"
+      },
+      {
+        "command": "projectManager.selectSymbolOutlineMode",
+        "title": "项目管家: 选择大纲模式",
+        "category": "项目管家",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "projectManager.showSymbolOutline",
+        "title": "项目管家: 打开/定位增强函数大纲",
+        "category": "项目管家",
+        "icon": "$(list-tree)"
+      },
+      {
+        "command": "projectManager.openNativeOutline",
+        "title": "项目管家: 打开 VS Code 原生大纲",
+        "category": "项目管家",
+        "icon": "$(outline-view-icon)"
+      },
+      {
+        "command": "projectManager.resolveNativeOutlineConflict",
+        "title": "当前配置仅使用增强大纲，点击修改",
+        "category": "项目管家",
+        "icon": "$(warning)"
+      },
+      {
+        "command": "projectManager.openProject",
+        "title": "项目管家: 打开项目",
+        "category": "项目管家"
+      },
+      {
+        "command": "projectManager.openProjectInNewWindow",
+        "title": "在新窗口打开项目",
+        "category": "项目管家"
+      },
+      {
+        "command": "projectManager.openProjectInCurrentWindow",
+        "title": "在当前窗口打开项目",
+        "category": "项目管家"
+      },
+      {
+        "command": "projectManager.renameCatalog",
+        "title": "重命名项目集合",
+        "category": "项目管家",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "projectManager.renameProjectAlias",
+        "title": "重命名项目别名",
+        "category": "项目管家",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "projectManager.reselectProjectPath",
+        "title": "重新选择项目路径",
+        "category": "项目管家",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "projectManager.removeProjectFromCatalog",
+        "title": "从当前集合移出",
+        "category": "项目管家",
+        "icon": "$(remove)"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "projectManager.excludeResources",
+          "when": "resourceScheme == file || resourceScheme == vscode-remote",
+          "group": "7_configure@20"
+        },
+        {
+          "command": "projectManager.excludeSameFileType",
+          "when": "(resourceScheme == file || resourceScheme == vscode-remote) && resourceExtname != ''",
+          "group": "7_configure@21"
+        },
+        {
+          "command": "projectManager.manageExclusions",
+          "when": "resourceScheme == file || resourceScheme == vscode-remote",
+          "group": "7_configure@22"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "projectManager.diagnoseActiveFile",
+          "when": "projectManager.activeFileIsExternal",
+          "group": "navigation@-100"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "projectManager.organizeCurrentTabGroup",
+          "when": "resourceScheme == file || resourceScheme == vscode-remote",
+          "group": "projectManager@1"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "projectManager.expandAllOpenedFiles",
+          "when": "view == projectManager.openedFilesView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "projectManager.collapseAllOpenedFiles",
+          "when": "view == projectManager.openedFilesView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "projectManager.hideNativeOpenEditors",
+          "when": "view == projectManager.openedFilesView",
+          "group": "navigation@3"
+        },
+        {
+          "command": "projectManager.addProjectToCatalog",
+          "when": "view == projectManager.projectsView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "projectManager.selectCatalog",
+          "when": "view == projectManager.projectsView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "projectManager.importCatalog",
+          "when": "view == projectManager.projectsView",
+          "group": "navigation@3"
+        },
+        {
+          "command": "projectManager.exportCatalog",
+          "when": "view == projectManager.projectsView && projectManager.hasCatalogs",
+          "group": "navigation@4"
+        },
+        {
+          "command": "projectManager.refreshProjects",
+          "when": "view == projectManager.projectsView && projectManager.hasActiveCatalog",
+          "group": "navigation@5"
+        },
+        {
+          "command": "projectManager.exitCatalog",
+          "when": "view == projectManager.projectsView && projectManager.hasActiveCatalog",
+          "group": "navigation@6"
+        },
+        {
+          "command": "projectManager.openSettings",
+          "when": "false",
+          "group": "navigation@6"
+        },
+        {
+          "command": "projectManager.refreshSymbolOutline",
+          "when": "view == projectManager.symbolOutlineView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "projectManager.selectSymbolOutlineAppearance",
+          "when": "view == projectManager.symbolOutlineView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "projectManager.selectSymbolOutlineMode",
+          "when": "view == projectManager.symbolOutlineView",
+          "group": "navigation@3"
+        },
+        {
+          "command": "projectManager.resolveNativeOutlineConflict",
+          "when": "false",
+          "group": "navigation@1"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "projectManager.collapseOpenedFilesNode",
+          "when": "view == projectManager.openedFilesView && viewItem =~ /projectManager\\.openedFiles\\..*\\.expanded/",
+          "group": "navigation@1"
+        },
+        {
+          "command": "projectManager.expandOpenedFilesNode",
+          "when": "view == projectManager.openedFilesView && viewItem =~ /projectManager\\.openedFiles\\..*\\.collapsed/",
+          "group": "navigation@1"
+        },
+        {
+          "command": "projectManager.renameCatalog",
+          "when": "view == projectManager.projectsView && viewItem == projectCatalog.summary",
+          "group": "projectCatalogEdit@1"
+        },
+        {
+          "command": "projectManager.openProjectInNewWindow",
+          "when": "view == projectManager.projectsView && viewItem == projectCatalog.availableProject",
+          "group": "inline@1"
+        },
+        {
+          "command": "projectManager.openProjectInCurrentWindow",
+          "when": "view == projectManager.projectsView && viewItem == projectCatalog.availableProject",
+          "group": "navigation@2"
+        },
+        {
+          "command": "projectManager.renameProjectAlias",
+          "when": "view == projectManager.projectsView && (viewItem == projectCatalog.availableProject || viewItem == projectCatalog.invalidProject)",
+          "group": "projectCatalogEdit@1"
+        },
+        {
+          "command": "projectManager.reselectProjectPath",
+          "when": "view == projectManager.projectsView && (viewItem == projectCatalog.availableProject || viewItem == projectCatalog.invalidProject)",
+          "group": "projectCatalogEdit@2"
+        },
+        {
+          "command": "projectManager.removeProjectFromCatalog",
+          "when": "view == projectManager.projectsView && (viewItem == projectCatalog.availableProject || viewItem == projectCatalog.invalidProject)",
+          "group": "projectCatalogMembership@1"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "projectManager.openProject",
+          "when": "false"
+        },
+        {
+          "command": "projectManager.openProjectInNewWindow",
+          "when": "false"
+        },
+        {
+          "command": "projectManager.openProjectInCurrentWindow",
+          "when": "false"
+        },
+        {
+          "command": "projectManager.renameCatalog",
+          "when": "false"
+        },
+        {
+          "command": "projectManager.renameProjectAlias",
+          "when": "false"
+        },
+        {
+          "command": "projectManager.reselectProjectPath",
+          "when": "false"
+        },
+        {
+          "command": "projectManager.removeProjectFromCatalog",
+          "when": "false"
+        },
+        {
+          "command": "projectManager.configureCatalogTabSetting",
+          "when": "false"
+        },
+        {
+          "command": "projectManager.configureCatalogOutlineMode",
+          "when": "false"
+        },
+        {
+          "command": "projectManager.resolveNativeOutlineConflict",
+          "when": "false"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "项目管家",
+      "properties": {
+        "projectManager.exclusions.confirmBeforeApply": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "description": "屏蔽资源前是否显示确认对话框。"
+        },
+        "projectManager.externalFiles.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "description": "是否标记不属于当前工作区的已打开文件。"
+        },
+        "projectManager.externalFiles.showColor": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "description": "是否为工作区外文件显示标签文字/图标的前景装饰颜色；VS Code 公开 API 不支持单独修改整个标签背景。"
+        },
+        "projectManager.externalFiles.showBadge": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "description": "是否为工作区外文件显示醒目的双感叹号徽标。"
+        },
+        "projectManager.externalFiles.showStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "description": "活动编辑器位于工作区外时，是否显示状态栏提醒。"
+        },
+        "projectManager.projectCatalog.openMode": {
+          "type": "string",
+          "enum": [
+            "prompt",
+            "newWindow",
+            "currentWindow"
+          ],
+          "enumDescriptions": [
+            "每次点击项目时询问使用新窗口还是当前窗口。",
+            "在新窗口打开并保留项目集合窗口。",
+            "复用当前窗口打开项目。"
+          ],
+          "default": "prompt",
+          "scope": "window",
+          "description": "点击项目集合条目时如何选择打开窗口；右键明确选择打开方式时不受此设置影响。"
+        },
+        "projectManager.tabs.autoOrganize": {
+          "type": "boolean",
+          "default": false,
+          "scope": "window",
+          "description": "个人回退值：是否自动将工作区外文件、设置页、扩展说明等非项目标签稳定移动到各编辑器组末尾。不会改变项目内文件之间的顺序。工作区显式值优先；集合内项目其次使用 features.tabs.autoOrganize；集合外项目再使用此值。"
+        },
+        "projectManager.tabs.openFilesView": {
+          "type": "string",
+          "enum": [
+            "directoryTree",
+            "native"
+          ],
+          "enumDescriptions": [
+            "在资源管理器显示插件提供的已打开文件目录树；可选择与原生“打开的编辑器”互斥。",
+            "隐藏插件目录树并恢复由插件改动的原生“打开的编辑器”设置。"
+          ],
+          "default": "directoryTree",
+          "scope": "window",
+          "description": "选择已打开文件的展示方式。目录树只读取当前已打开的普通文件，不扫描工作区。"
+        },
+        "projectManager.symbolOutline.mode": {
+          "type": "string",
+          "enum": [
+            "native",
+            "enhanced",
+            "both"
+          ],
+          "enumDescriptions": [
+            "只使用 VS Code 原生大纲，隐藏增强函数大纲。",
+            "显示增强函数大纲；受 VS Code API 限制，原生大纲需要按增强大纲内的常驻提示手动隐藏。",
+            "允许 VS Code 原生大纲和增强函数大纲同时显示。"
+          ],
+          "default": "both",
+          "scope": "window",
+          "description": "个人回退值：选择原生大纲、增强函数大纲或同时使用。工作区显式值优先；集合内项目其次使用 features.symbolOutline.mode。"
+        },
+        "projectManager.symbolOutline.followActiveEditor": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "description": "旧版兼容项。函数大纲现在始终跟随当前活动文本文件，此设置不再生效。",
+          "deprecationMessage": "固定模式已移除；函数大纲始终跟随当前活动文本文件。"
+        },
+        "projectManager.symbolOutline.scope": {
+          "type": "string",
+          "enum": [
+            "functions",
+            "functionsAndTypes",
+            "all"
+          ],
+          "enumDescriptions": [
+            "仅显示函数、方法和构造函数。",
+            "显示函数以及类、接口、结构体、命名空间等类型。",
+            "显示语言服务返回的全部符号。"
+          ],
+          "default": "functionsAndTypes",
+          "scope": "window",
+          "description": "函数大纲显示的符号范围。"
+        },
+        "projectManager.symbolOutline.hierarchy": {
+          "type": "string",
+          "enum": [
+            "tree",
+            "flat"
+          ],
+          "enumDescriptions": [
+            "保留类、命名空间和成员的父子关系。",
+            "将符合条件的符号显示为单层列表。"
+          ],
+          "default": "tree",
+          "scope": "window",
+          "description": "函数大纲的层级方式。",
+          "markdownDescription": "旧版兼容项。增强函数大纲现在固定使用树状层级，`tree` 与 `flat` 均按树状运行。",
+          "deprecationMessage": "层级选择已移除；增强函数大纲固定使用树状层级。"
+        },
+        "projectManager.symbolOutline.sort": {
+          "type": "string",
+          "enum": [
+            "source",
+            "name",
+            "typeName"
+          ],
+          "enumDescriptions": [
+            "按照符号在源码中的位置排序。",
+            "按照名称排序。",
+            "先按照符号类型、再按照名称排序。"
+          ],
+          "default": "source",
+          "scope": "window",
+          "description": "函数大纲的排序方式。"
+        },
+        "projectManager.symbolOutline.appearance": {
+          "type": "string",
+          "enum": [
+            "vscode",
+            "sourceInsightLight",
+            "sourceInsightBlack"
+          ],
+          "enumDescriptions": [
+            "跟随当前 VS Code 主题。",
+            "使用近似 Source Insight 紧凑面板的浅色预设。",
+            "使用近似 Source Insight Black 主题方向的深色预设。"
+          ],
+          "default": "vscode",
+          "scope": "window",
+          "description": "函数大纲的外观；Source Insight 预设为近似方案，不是官方主题复制。"
+        },
+        "projectManager.symbolOutline.showSignature": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "description": "是否显示语言服务提供的符号签名或容器路径。"
+        },
+        "projectManager.symbolOutline.showLineMetrics": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "description": "是否显示符号起始行和跨度行数。"
+        },
+        "projectManager.symbolOutline.highlightLongFunctions": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "description": "是否突出跨度高于当前文件函数平均值的函数。"
+        },
+        "projectManager.symbolOutline.highlightEditedSymbols": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "description": "是否标记本次保存后又编辑过的符号；保存文档后清除标记。"
+        },
+        "projectManager.symbolOutline.scale": {
+          "type": "number",
+          "default": 100,
+          "minimum": 90,
+          "maximum": 150,
+          "multipleOf": 5,
+          "scope": "window",
+          "description": "函数大纲界面缩放百分比。"
+        }
+      }
+    },
+    "colors": [
+      {
+        "id": "projectManager.externalFileForeground",
+        "description": "工作区外文件的标签装饰颜色。",
+        "defaults": {
+          "dark": "#FF6B6B",
+          "light": "#B42318",
+          "highContrast": "#FFFF00",
+          "highContrastLight": "#7A3E00"
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run icons:check && npm run compile",
+    "icons:check": "node scripts/generate-icons.mjs --check",
+    "icons:generate": "node scripts/generate-icons.mjs --write",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "check": "npm run icons:check && tsc --noEmit -p ./",
+    "test": "npm run test:unit",
+    "test:unit": "npm run icons:check && npm run compile && node --test \"dist/test/**/*.test.js\"",
+    "test:integration": "npm run package:vsix && vscode-test",
+    "test:all": "npm run test:unit && npm run test:integration",
+    "package:vsix": "vsce package --pre-release --no-dependencies --out releases/project-butler-0.7.5-preview-test-r16.vsix"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.0.0",
+    "@types/sinon": "^22.0.0",
+    "@types/vscode": "1.88.0",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "3.9.1",
+    "sinon": "^22.1.0",
+    "typescript": "^5.8.0"
+  }
+}
