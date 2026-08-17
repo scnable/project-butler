@@ -15,6 +15,7 @@ import {
   createSymbolId,
   findCurrentSymbol,
   flattenSymbols,
+  getOutlineDisplayName,
   OutlineHierarchy,
   OutlineRange,
   OutlineScope,
@@ -37,7 +38,6 @@ interface OutlinePreferences {
   hierarchy: OutlineHierarchy;
   sort: OutlineSort;
   appearance: OutlineAppearance;
-  showSignature: boolean;
   showLineMetrics: boolean;
   highlightLongFunctions: boolean;
   highlightEditedSymbols: boolean;
@@ -373,7 +373,6 @@ export class SymbolOutlineViewProvider implements vscode.WebviewViewProvider, vs
       hierarchy: 'tree',
       sort: readEnum(configuration.get<string>('sort'), ['source', 'name', 'typeName'], 'source'),
       appearance: readEnum(configuration.get<string>('appearance'), ['vscode', 'sourceInsightLight', 'sourceInsightBlack'], 'vscode'),
-      showSignature: configuration.get<boolean>('showSignature', true),
       showLineMetrics: configuration.get<boolean>('showLineMetrics', true),
       highlightLongFunctions: configuration.get<boolean>('highlightLongFunctions', true),
       highlightEditedSymbols: configuration.get<boolean>('highlightEditedSymbols', true),
@@ -582,7 +581,6 @@ export class SymbolOutlineViewProvider implements vscode.WebviewViewProvider, vs
       hierarchy: ['tree', 'flat'],
       sort: ['source', 'name', 'typeName'],
       appearance: ['vscode', 'sourceInsightLight', 'sourceInsightBlack'],
-      showSignature: [true, false],
       showLineMetrics: [true, false],
       highlightLongFunctions: [true, false],
       highlightEditedSymbols: [true, false],
@@ -967,11 +965,12 @@ function normalizeSymbols(
 ): OutlineSymbol[] {
   const normalizeDocumentSymbol = (symbol: vscode.DocumentSymbol, parentPath: string): OutlineSymbol => {
     const kind = symbolKindName(symbol.kind);
-    const currentPath = parentPath.length === 0 ? symbol.name : `${parentPath} › ${symbol.name}`;
+    const displayName = getOutlineDisplayName(symbol.name, kind);
+    const currentPath = parentPath.length === 0 ? displayName : `${parentPath} › ${displayName}`;
     return {
-      id: createSymbolId(documentKey, kind, symbol.name, parentPath, fromVsCodePosition(symbol.selectionRange.start)),
-      editKey: createEditKey(kind, symbol.name, parentPath),
-      name: symbol.name,
+      id: createSymbolId(documentKey, kind, displayName, parentPath, fromVsCodePosition(symbol.selectionRange.start)),
+      editKey: createEditKey(kind, displayName, parentPath),
+      name: displayName,
       detail: symbol.detail,
       containerName: parentPath,
       parentPath,
@@ -991,12 +990,13 @@ function normalizeSymbols(
       return normalizeDocumentSymbol(symbol, '');
     }
     const kind = symbolKindName(symbol.kind);
+    const displayName = getOutlineDisplayName(symbol.name, kind);
     const range = fromVsCodeRange(symbol.location.range);
     const parentPath = symbol.containerName;
     return {
-      id: createSymbolId(documentKey, kind, symbol.name, parentPath, range.start),
-      editKey: createEditKey(kind, symbol.name, parentPath),
-      name: symbol.name,
+      id: createSymbolId(documentKey, kind, displayName, parentPath, range.start),
+      editKey: createEditKey(kind, displayName, parentPath),
+      name: displayName,
       detail: '',
       containerName: symbol.containerName,
       parentPath,

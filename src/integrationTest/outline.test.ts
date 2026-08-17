@@ -146,12 +146,17 @@ suite('增强函数大纲', () => {
     assert.equal(api.outline.getStateForIntegrationTest().fileName, 'outline-sample.ts');
   });
 
-  test('INT-144 签名、行号配置进入真实大纲状态', async () => {
-    await applyPersonalSettingValue('showSignature', false);
+  test('INT-144 函数名不显示参数且行号配置进入真实大纲状态', async () => {
     await applyPersonalSettingValue('showLineMetrics', false);
-    const preferences = (await openSampleAndRefresh()).preferences;
-    assert.equal(preferences.showSignature, false);
-    assert.equal(preferences.showLineMetrics, false);
+    const state = await openSampleAndRefresh();
+    assert.equal(Object.hasOwn(state.preferences, 'showSignature'), false);
+    assert.equal(state.preferences.showLineMetrics, false);
+    assert.equal(
+      flattenSymbols(state.symbols)
+        .filter((symbol) => ['Function', 'Method', 'Constructor'].includes(symbol.kind))
+        .some((symbol) => symbol.name.includes('(')),
+      false,
+    );
   });
 
   test('INT-145 长函数按当前文件平均跨度标记', async () => {
@@ -301,9 +306,11 @@ suite('增强函数大纲', () => {
       assert.ok(flattened.some((symbol) => symbol.kind === 'PreprocessorRegion'));
       assert.ok(flattened.some((symbol) => symbol.kind === 'PreprocessorBranch' && symbol.name === '#else'));
       const conditionalRegion = state.symbols.find((symbol) => symbol.kind === 'PreprocessorRegion');
-      const ifBranch = conditionalRegion?.children.find((symbol) => symbol.name.includes('USE_FAST_PATH'));
+      assert.match(conditionalRegion?.name ?? '', /^#if\b/);
+      assert.equal(conditionalRegion?.name.includes('条件编译'), false);
+      const fastPath = conditionalRegion?.children.find((symbol) => symbol.name === 'fast_path');
       const elseBranch = conditionalRegion?.children.find((symbol) => symbol.name === '#else');
-      assert.ok(ifBranch?.children.some((symbol) => symbol.name === 'fast_path'));
+      assert.ok(fastPath);
       assert.ok(elseBranch?.children.some((symbol) => symbol.name === 'safe_path'));
     } finally {
       provider.dispose();
@@ -329,7 +336,6 @@ async function restoreOutlineDefaults(): Promise<void> {
   await applyPersonalSettingValue('outlineHierarchy', 'tree');
   await applyPersonalSettingValue('outlineSort', 'source');
   await applyPersonalSettingValue('outlineAppearance', 'vscode');
-  await applyPersonalSettingValue('showSignature', true);
   await applyPersonalSettingValue('showLineMetrics', true);
   await applyPersonalSettingValue('highlightLong', true);
   await applyPersonalSettingValue('highlightEdited', true);

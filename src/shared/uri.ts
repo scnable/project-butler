@@ -39,12 +39,18 @@ export function getWorkspaceRelativePath(
     return undefined;
   }
 
-  const relativePath = path.posix.relative(workspaceFolder.uri.path, resource.path);
+  const relativePath = resource.scheme === 'file'
+    ? path.relative(
+      path.resolve(workspaceFolder.uri.fsPath),
+      path.resolve(resource.fsPath),
+    ).replace(/\\/g, '/')
+    : path.posix.relative(workspaceFolder.uri.path, resource.path);
   if (
     relativePath.length === 0
     || relativePath === '..'
     || relativePath.startsWith('../')
     || path.posix.isAbsolute(relativePath)
+    || path.isAbsolute(relativePath)
   ) {
     return undefined;
   }

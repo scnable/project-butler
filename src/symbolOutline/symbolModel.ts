@@ -75,6 +75,17 @@ export function isFunctionKind(kind: string): boolean {
   return FUNCTION_KINDS.has(kind);
 }
 
+export function getOutlineDisplayName(name: string, kind: string): string {
+  const trimmed = name.trim();
+  if (!isFunctionKind(kind)) return trimmed;
+
+  const callOperator = /^(.*\boperator\s*(?:\(\)|\[\]))\s*\(/.exec(trimmed);
+  if (callOperator?.[1] !== undefined) return callOperator[1].trim();
+
+  const parametersStart = trimmed.indexOf('(');
+  return parametersStart > 0 ? trimmed.slice(0, parametersStart).trim() : trimmed;
+}
+
 export function isTypeKind(kind: string): boolean {
   return TYPE_KINDS.has(kind);
 }

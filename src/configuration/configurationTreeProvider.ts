@@ -78,7 +78,6 @@ const PERSONAL_SETTINGS = {
   outlineAppearance: setting('外观', 'projectManager.symbolOutline', 'appearance', [
     { label: '跟随 VS Code', value: 'vscode' }, { label: 'Source Insight 浅色', value: 'sourceInsightLight' }, { label: 'Source Insight 黑色', value: 'sourceInsightBlack' },
   ]),
-  showSignature: setting('显示签名', 'projectManager.symbolOutline', 'showSignature', booleanChoices()),
   showLineMetrics: setting('显示行数', 'projectManager.symbolOutline', 'showLineMetrics', booleanChoices()),
   highlightLong: setting('突出长函数', 'projectManager.symbolOutline', 'highlightLongFunctions', booleanChoices()),
   highlightEdited: setting('标记已编辑符号', 'projectManager.symbolOutline', 'highlightEditedSymbols', booleanChoices()),
@@ -108,7 +107,6 @@ const GROUP_CHILDREN: Record<GroupId, readonly ConfigurationTreeNode[]> = {
   ],
   outlineAppearance: [
     { kind: 'personalSetting', key: 'outlineAppearance' },
-    { kind: 'personalSetting', key: 'showSignature' },
     { kind: 'personalSetting', key: 'showLineMetrics' },
     { kind: 'personalSetting', key: 'highlightLong' },
     { kind: 'personalSetting', key: 'highlightEdited' },

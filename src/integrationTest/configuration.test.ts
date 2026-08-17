@@ -208,7 +208,6 @@ suite('配置侧栏、优先级与实时生效', () => {
     ['INT-038', 'outlineHierarchy', 'flat', 'projectManager.symbolOutline', 'hierarchy'],
     ['INT-039', 'outlineSort', 'name', 'projectManager.symbolOutline', 'sort'],
     ['INT-040', 'outlineAppearance', 'sourceInsightBlack', 'projectManager.symbolOutline', 'appearance'],
-    ['INT-041', 'showSignature', false, 'projectManager.symbolOutline', 'showSignature'],
     ['INT-042', 'showLineMetrics', false, 'projectManager.symbolOutline', 'showLineMetrics'],
     ['INT-043', 'highlightLong', false, 'projectManager.symbolOutline', 'highlightLongFunctions'],
     ['INT-044', 'highlightEdited', false, 'projectManager.symbolOutline', 'highlightEditedSymbols'],
@@ -221,6 +220,20 @@ suite('配置侧栏、优先级与实时生效', () => {
       assert.equal(vscode.workspace.getConfiguration(section).inspect(settingKey)?.globalValue, value);
     });
   }
+
+  test('INT-041 已移除的签名显示选项不再注册', async () => {
+    const inspected = vscode.workspace.getConfiguration('projectManager.symbolOutline').inspect('showSignature');
+    assert.equal(inspected?.defaultValue, undefined);
+    const api = await getApi();
+    const group = api.catalogs.configurationProvider.getChildren()
+      .find((node) => node.kind === 'group' && node.id === 'outlineAppearance');
+    assert.ok(group);
+    assert.equal(
+      api.catalogs.configurationProvider.getChildren(group)
+        .some((node) => node.kind === 'personalSetting' && String(node.key) === 'showSignature'),
+      false,
+    );
+  });
 
   test('INT-046 projectManager 配置外部变化触发配置树刷新', async () => {
     const api = await getApi();
@@ -283,7 +296,6 @@ suite('配置侧栏、优先级与实时生效', () => {
       .map((node) => node.key);
     assert.deepEqual(keys, [
       'outlineAppearance',
-      'showSignature',
       'showLineMetrics',
       'highlightLong',
       'highlightEdited',
@@ -363,7 +375,6 @@ async function restorePersonalDefaults(): Promise<void> {
   await applyPersonalSettingValue('outlineHierarchy', 'tree');
   await applyPersonalSettingValue('outlineSort', 'source');
   await applyPersonalSettingValue('outlineAppearance', 'vscode');
-  await applyPersonalSettingValue('showSignature', true);
   await applyPersonalSettingValue('showLineMetrics', true);
   await applyPersonalSettingValue('highlightLong', true);
   await applyPersonalSettingValue('highlightEdited', true);

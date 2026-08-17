@@ -95,7 +95,7 @@ describe('函数大纲增强模型', () => {
     assert.equal(flattened.filter((item) => item.name === 'LIMIT').length, 1);
     assert.equal(flattened.some((item) => item.name === 'LIMIT(value)'), false);
     assert.equal(flattened.find((item) => item.name === 'LIMIT')?.kind, 'MacroDefinition');
-    assert.equal(result[0]?.children[0]?.children[0]?.name, 'LIMIT');
+    assert.equal(result[0]?.children[0]?.name, 'LIMIT');
   });
 
   it('普通常量不会被宏去重逻辑误删', () => {
@@ -121,11 +121,12 @@ describe('函数大纲增强模型', () => {
 
     assert.equal(result.length, 1);
     assert.equal(result[0]?.kind, 'PreprocessorRegion');
+    assert.equal(result[0]?.name, '#if defined(USE_TCP)');
     assert.deepEqual(result[0]?.children.map((item) => item.name), [
-      '#if defined(USE_TCP)',
+      'start_tcp',
       '#else',
     ]);
-    assert.equal(result[0]?.children[0]?.children[0]?.name, 'start_tcp');
+    assert.equal(result[0]?.children[0]?.name, 'start_tcp');
     assert.equal(result[0]?.children[1]?.children[0]?.name, 'start_udp');
   });
 
@@ -144,7 +145,7 @@ describe('函数大纲增强模型', () => {
 
     assert.deepEqual(
       flattened.filter((item) => item.kind === 'PreprocessorRegion').map((item) => item.name),
-      ['条件编译 · #ifdef OUTER', '条件编译 · #if INNER'],
+      ['#ifdef OUTER', '#if INNER'],
     );
     assert.equal(flattened.find((item) => item.name === 'nested')?.parentPath, '');
   });
@@ -166,7 +167,7 @@ describe('函数大纲增强模型', () => {
     ].join('\n');
     const regions = createPreprocessorSymbols(source, 'file:///comments.c');
 
-    assert.deepEqual(regions.map((item) => item.name), ['条件编译 · #if REAL_VALUE']);
+    assert.deepEqual(regions.map((item) => item.name), ['#if REAL_VALUE']);
   });
 
   it('非 C 家族语言不添加预处理节点', () => {

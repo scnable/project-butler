@@ -169,9 +169,10 @@ export function getSymbolOutlineHtml(
       display: flex;
       align-items: center;
       height: calc(22px * var(--outline-scale));
-      min-width: max-content;
+      min-width: 0;
       width: 100%;
       padding-right: 6px;
+      box-sizing: border-box;
       border-left: 2px solid transparent;
       cursor: default;
       user-select: none;
@@ -183,7 +184,7 @@ export function getSymbolOutlineHtml(
       border-left-color: var(--outline-current);
     }
     .symbol-row.context { opacity: 0.8; }
-    .caret { width: 18px; height: 18px; padding: 0; border: 0; color: inherit; background: none; cursor: pointer; }
+    .caret { flex: 0 0 18px; width: 18px; height: 18px; padding: 0; border: 0; color: inherit; background: none; cursor: pointer; }
     .caret.empty { visibility: hidden; }
     .kind-icon {
       display: inline-block;
@@ -202,10 +203,9 @@ export function getSymbolOutlineHtml(
       mask-repeat: no-repeat;
       mask-size: contain;
     }
-    .symbol-name { max-width: 42vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .symbol-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .symbol-row.type .symbol-name, .symbol-row.long .symbol-name { font-weight: 600; }
-    .symbol-detail { max-width: 34vw; margin-left: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--outline-muted); font-family: var(--outline-code-font); font-size: 0.91em; }
-    .metrics { margin-left: auto; padding-left: 8px; color: var(--outline-muted); font-family: var(--outline-code-font); font-size: 0.88em; }
+    .metrics { flex: 0 0 auto; margin-left: auto; padding-left: 8px; color: var(--outline-muted); font-family: var(--outline-code-font); font-size: 0.88em; }
     .state-icon {
       display: inline-block;
       flex: 0 0 auto;
@@ -443,18 +443,9 @@ export function getSymbolOutlineHtml(
       const icon = createSemanticIcon(iconMetadata.semantic, 'kind-icon', iconMetadata.label);
       const name = document.createElement('span');
       name.className = 'symbol-name';
+      name.title = symbol.name;
       appendHighlighted(name, symbol.name, currentState.query);
       row.append(caret, icon, name);
-
-      const detailText = currentState.preferences.showSignature
-        ? symbol.detail
-        : '';
-      if (detailText) {
-        const detail = document.createElement('span');
-        detail.className = 'symbol-detail';
-        appendHighlighted(detail, detailText, currentState.query);
-        row.appendChild(detail);
-      }
       if (currentState.preferences.showLineMetrics) {
         const metrics = document.createElement('span');
         metrics.className = 'metrics';

@@ -701,12 +701,6 @@
           "scope": "window",
           "description": "函数大纲的外观；Source Insight 预设为近似方案，不是官方主题复制。"
         },
-        "projectManager.symbolOutline.showSignature": {
-          "type": "boolean",
-          "default": true,
-          "scope": "window",
-          "description": "是否显示语言服务提供的符号签名或容器路径。"
-        },
         "projectManager.symbolOutline.showLineMetrics": {
           "type": "boolean",
           "default": true,

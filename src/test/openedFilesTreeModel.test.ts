@@ -5,6 +5,7 @@ import { buildOpenedFilesTree, flattenOpenedFileTree, OpenedFileDescriptor } fro
 function file(overrides: Partial<OpenedFileDescriptor> & Pick<OpenedFileDescriptor, 'id' | 'label'>): OpenedFileDescriptor {
   return {
     uri: `file:///workspace/${overrides.label}`,
+    comparisonKey: overrides.uri ?? `file:///workspace/${overrides.label}`,
     groupId: '1',
     groupLabel: '编辑器组 1',
     workspaceId: 'file:///workspace',
@@ -25,7 +26,7 @@ describe('已打开文件目录树模型', () => {
     ]);
     assert.equal(roots.length, 1);
     assert.equal(roots[0]?.kind, 'directory');
-    assert.equal(roots[0]?.label, 'src');
+    assert.equal(roots[0]?.label, 'src/');
     assert.deepEqual(roots[0]?.children.map((node) => node.label), ['app.ts', 'util.ts']);
   });
 
@@ -52,6 +53,7 @@ describe('已打开文件目录树模型', () => {
       file({ id: 'inside', label: 'inside.ts' }),
       {
         id: 'outside',
+        comparisonKey: 'file:///outside/outside.ts',
         label: 'outside.ts',
         uri: 'file:///outside/outside.ts',
         groupId: '1',
@@ -71,6 +73,55 @@ describe('已打开文件目录树模型', () => {
     const roots = buildOpenedFilesTree([
       file({ id: 'a', label: 'a.ts', pathSegments: ['src', 'deep', 'a.ts'] }),
     ]);
-    assert.deepEqual(flattenOpenedFileTree(roots).map((node) => node.label), ['src', 'deep', 'a.ts']);
+    assert.deepEqual(flattenOpenedFileTree(roots).map((node) => node.label), ['src/deep/', 'a.ts']);
+  });
+
+  it('提取公共根并压缩连续的单子目录链', () => {
+    const roots = buildOpenedFilesTree([
+      file({
+        id: 'account',
+        label: 'AccountSettings',
+        pathSegments: ['src', 'pages', 'user', 'profile', 'settings', 'AccountSettings'],
+      }),
+      file({
+        id: 'notification',
+        label: 'NotificationSettings',
+        pathSegments: ['src', 'pages', 'user', 'profile', 'settings', 'NotificationSettings'],
+      }),
+      file({
+        id: 'overview',
+        label: 'Overview',
+        pathSegments: ['src', 'pages', 'admin', 'dashboard', 'Overview'],
+      }),
+    ]);
+
+    assert.equal(roots[0]?.label, 'src/pages/');
+    assert.deepEqual(roots[0]?.children.map((node) => node.label), [
+      'user/profile/settings/',
+      'admin/dashboard/',
+    ]);
+    assert.deepEqual(roots[0]?.children[0]?.children.map((node) => node.label), [
+      'AccountSettings',
+      'NotificationSettings',
+    ]);
+  });
+
+  it('同一 URI 跨编辑器组只显示一次并优先保留活动标签', () => {
+    const roots = buildOpenedFilesTree([
+      file({ id: 'inactive', label: 'app.ts', comparisonKey: 'file:c:/workspace/app.ts' }),
+      file({
+        id: 'active',
+        label: 'app.ts',
+        comparisonKey: 'file:c:/workspace/app.ts',
+        groupId: '2',
+        groupLabel: '编辑器组 2',
+        active: true,
+      }),
+    ]);
+    const files = flattenOpenedFileTree(roots).filter((node) => node.kind === 'file');
+
+    assert.equal(files.length, 1);
+    assert.equal(files[0]?.tabId, 'active');
+    assert.equal(files[0]?.groupId, '2');
   });
 });

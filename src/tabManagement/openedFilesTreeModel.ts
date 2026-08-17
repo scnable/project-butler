@@ -2,6 +2,7 @@ export type OpenedFileNodeKind = 'group' | 'workspace' | 'directory' | 'external
 
 export interface OpenedFileDescriptor {
   readonly id: string;
+  readonly comparisonKey: string;
   readonly label: string;
   readonly uri: string;
   readonly groupId: string;
@@ -41,12 +42,13 @@ interface MutableNode {
 }
 
 export function buildOpenedFilesTree(files: readonly OpenedFileDescriptor[]): OpenedFileTreeNode[] {
-  const groupOrder = unique(files.map((file) => file.groupId));
+  const uniqueFiles = deduplicateOpenedFiles(files);
+  const groupOrder = unique(uniqueFiles.map((file) => file.groupId));
   const multipleGroups = groupOrder.length > 1;
   const roots: MutableNode[] = [];
 
   for (const groupId of groupOrder) {
-    const groupFiles = files.filter((file) => file.groupId === groupId);
+    const groupFiles = uniqueFiles.filter((file) => file.groupId === groupId);
     const groupChildren = buildGroupChildren(groupFiles, groupId);
     if (multipleGroups) {
       roots.push({
@@ -61,7 +63,28 @@ export function buildOpenedFilesTree(files: readonly OpenedFileDescriptor[]): Op
     }
   }
 
-  return roots;
+  return compactDirectoryChains(roots);
+}
+
+export function deduplicateOpenedFiles(
+  files: readonly OpenedFileDescriptor[],
+): OpenedFileDescriptor[] {
+  const uniqueFiles: OpenedFileDescriptor[] = [];
+  const indexes = new Map<string, number>();
+
+  for (const file of files) {
+    const existingIndex = indexes.get(file.comparisonKey);
+    if (existingIndex === undefined) {
+      indexes.set(file.comparisonKey, uniqueFiles.length);
+      uniqueFiles.push(file);
+      continue;
+    }
+
+    const existing = uniqueFiles[existingIndex];
+    if (existing !== undefined && shouldPreferFile(file, existing)) uniqueFiles[existingIndex] = file;
+  }
+
+  return uniqueFiles;
 }
 
 export function flattenOpenedFileTree(nodes: readonly OpenedFileTreeNode[]): OpenedFileTreeNode[] {
@@ -125,7 +148,7 @@ function insertFile(
       directory = {
         id: nextId,
         kind: 'directory',
-        label: segment,
+        label: `${segment}/`,
         groupId: file.groupId,
         children: [],
       };
@@ -146,6 +169,38 @@ function insertFile(
     preview: file.preview,
     children: [],
   });
+}
+
+function compactDirectoryChains(nodes: readonly MutableNode[]): MutableNode[] {
+  return nodes.map((node) => {
+    const compactChildren = compactDirectoryChains(node.children);
+    let compactNode: MutableNode = { ...node, children: compactChildren };
+
+    while (
+      compactNode.kind === 'directory'
+      && compactNode.children.length === 1
+      && compactNode.children[0]?.kind === 'directory'
+    ) {
+      const child = compactNode.children[0];
+      compactNode = {
+        ...compactNode,
+        id: child.id,
+        label: `${compactNode.label}${child.label}`,
+        children: child.children,
+      };
+    }
+
+    return compactNode;
+  });
+}
+
+function shouldPreferFile(
+  candidate: OpenedFileDescriptor,
+  existing: OpenedFileDescriptor,
+): boolean {
+  if (candidate.active !== existing.active) return candidate.active;
+  if (candidate.preview !== existing.preview) return !candidate.preview;
+  return false;
 }
 
 function unique(values: readonly string[]): string[] {

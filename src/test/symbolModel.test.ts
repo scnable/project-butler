@@ -5,6 +5,7 @@ import {
   createEditKey,
   createSymbolId,
   findCurrentSymbol,
+  getOutlineDisplayName,
   OutlineSymbol,
   projectSymbols,
 } from '../symbolOutline/symbolModel';
@@ -46,6 +47,13 @@ const defaults = {
 };
 
 describe('函数大纲领域模型', () => {
+  it('函数、方法和构造函数名称不包含参数', () => {
+    assert.equal(getOutlineDisplayName('start_tcp(void)', 'Function'), 'start_tcp');
+    assert.equal(getOutlineDisplayName('Calculator(number value)', 'Constructor'), 'Calculator');
+    assert.equal(getOutlineDisplayName('operator()(const Item& item)', 'Method'), 'operator()');
+    assert.equal(getOutlineDisplayName('Packet', 'Struct'), 'Packet');
+  });
+
   it('仅函数模式保留必要的类型祖先', () => {
     const method = symbol('run', 'Method', 2, 4, [], 'Demo');
     const type = symbol('Demo', 'Class', 1, 5, [method]);

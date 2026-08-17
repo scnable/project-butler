@@ -45,7 +45,7 @@ export function enhanceOutlineSymbols(
   const regions = createPreprocessorSymbols(source, documentKey);
   const macros = createMacroSymbols(source, documentKey);
   const withoutMacroAliases = removeMacroAliases(deduplicated, macros);
-  return mergeOutlineLevels([...withoutMacroAliases, ...macros], regions);
+  return simplifyPreprocessorRegions(mergeOutlineLevels([...withoutMacroAliases, ...macros], regions));
 }
 
 export function createMacroSymbols(source: string, documentKey: string): OutlineSymbol[] {
@@ -199,7 +199,7 @@ function convertCompletedRegion(
   if (region.endLine === undefined) {
     return undefined;
   }
-  const regionName = `条件编译 · ${formatDirective(region.directive, region.summary)}`;
+  const regionName = formatDirective(region.directive, region.summary);
   const regionPath = parentPath.length === 0 ? regionName : `${parentPath} › ${regionName}`;
   const range = lineRange(region.startLine, region.endLine, lines);
   const branches = region.branches
@@ -356,6 +356,24 @@ function populateRegion(region: OutlineSymbol, symbols: readonly OutlineSymbol[]
     ...region,
     children: [...remaining, ...branches].sort(compareSourcePosition),
   };
+}
+
+function simplifyPreprocessorRegions(symbols: readonly OutlineSymbol[]): OutlineSymbol[] {
+  return symbols.map((symbol) => {
+    const children = simplifyPreprocessorRegions(symbol.children);
+    if (symbol.kind !== 'PreprocessorRegion') return { ...symbol, children };
+
+    const firstBranch = children.find((child) => (
+      child.kind === 'PreprocessorBranch'
+      && child.range.start.line === symbol.range.start.line
+    ));
+    if (firstBranch === undefined) return { ...symbol, children };
+
+    return {
+      ...symbol,
+      children: children.flatMap((child) => child === firstBranch ? child.children : [child]),
+    };
+  });
 }
 
 function isProvenStructDuplicate(left: OutlineSymbol, right: OutlineSymbol): boolean {

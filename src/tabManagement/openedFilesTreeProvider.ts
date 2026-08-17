@@ -7,6 +7,7 @@ import {
   OpenedFileTreeNode,
 } from './openedFilesTreeModel';
 import { createTreeIconPath } from '../visual/treeIconResources';
+import { getWorkspaceRelativePath } from '../shared/uri';
 
 export class OpenedFilesTreeProvider implements vscode.TreeDataProvider<OpenedFileTreeNode>, vscode.Disposable {
   private readonly changeEmitter = new vscode.EventEmitter<OpenedFileTreeNode | undefined>();
@@ -164,13 +165,16 @@ export class OpenedFilesTreeProvider implements vscode.TreeDataProvider<OpenedFi
       for (const tab of group.tabs) {
         const uri = getTextUri(tab);
         if (uri === undefined) continue;
-        const workspace = vscode.workspace.getWorkspaceFolder(uri);
+        const workspaceCandidate = vscode.workspace.getWorkspaceFolder(uri);
+        const relativePath = workspaceCandidate === undefined
+          ? undefined
+          : getWorkspaceRelativePath(workspaceCandidate, uri);
+        const workspace = relativePath === undefined ? undefined : workspaceCandidate;
         const external = workspace === undefined;
-        const relativePath = workspace === undefined
-          ? path.posix.basename(uri.path)
-          : path.posix.relative(workspace.uri.path, uri.path);
+        const displayPath = relativePath ?? path.posix.basename(uri.path);
         descriptors.push({
           id: `${group.viewColumn}:${uri.toString()}`,
+          comparisonKey: getUriComparisonKey(uri),
           label: tab.label,
           uri: uri.toString(),
           groupId: String(group.viewColumn),
@@ -179,7 +183,7 @@ export class OpenedFilesTreeProvider implements vscode.TreeDataProvider<OpenedFi
             workspaceId: workspace.uri.toString(),
             workspaceLabel: workspace.name,
           }),
-          pathSegments: relativePath.split('/').filter(Boolean),
+          pathSegments: displayPath.split('/').filter(Boolean),
           external,
           active: tab.isActive,
           preview: tab.isPreview,
@@ -194,7 +198,8 @@ export class OpenedFilesTreeProvider implements vscode.TreeDataProvider<OpenedFi
     } else if (this.treeView !== undefined) {
       this.treeView.message = '';
     }
-    this.output.appendLine(`已打开文件目录已刷新：${descriptors.length} 个普通文件标签。`);
+    const uniqueCount = flattenOpenedFileTree(this.roots).filter((node) => node.kind === 'file').length;
+    this.output.appendLine(`已打开文件目录已刷新：${uniqueCount} 个文件，来源于 ${descriptors.length} 个普通文件标签。`);
   }
 
   private indexParents(parent: OpenedFileTreeNode): void {
@@ -207,4 +212,17 @@ export class OpenedFilesTreeProvider implements vscode.TreeDataProvider<OpenedFi
 
 function getTextUri(tab: vscode.Tab): vscode.Uri | undefined {
   return tab.input instanceof vscode.TabInputText ? tab.input.uri : undefined;
+}
+
+export function getUriComparisonKey(uri: vscode.Uri): string {
+  if (uri.scheme === 'file') {
+    const normalizedPath = path.normalize(uri.fsPath);
+    return `file:${process.platform === 'win32' ? normalizedPath.toLowerCase() : normalizedPath}`;
+  }
+
+  return uri.with({
+    scheme: uri.scheme.toLowerCase(),
+    authority: uri.authority.toLowerCase(),
+    fragment: '',
+  }).toString();
 }

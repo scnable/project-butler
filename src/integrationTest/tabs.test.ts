@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import * as sinon from 'sinon';
 import * as vscode from 'vscode';
 import { applyPersonalSettingValue } from '../configuration/configurationTreeProvider';
+import { getWorkspaceRelativePath } from '../shared/uri';
 import { isSameOrder, moveNonProjectTabsToTail } from '../tabManagement/tabGrouping';
 import {
   closeAllEditors,
@@ -227,7 +228,7 @@ suite('标签页自动与手动整理', () => {
     await delay(150);
     const roots = api.openedFilesTree.provider.getRootsForIntegrationTest();
     const labels = flattenLabels(roots);
-    assert.ok(labels.includes('src'));
+    assert.ok(labels.includes('src/'));
     assert.ok(labels.includes('app.ts'));
     assert.equal(labels.includes('normal.txt'), false);
   });
@@ -348,6 +349,56 @@ suite('标签页自动与手动整理', () => {
       commands.includes('workbench.explorer.openEditorsView'),
       'VS Code 应注册原生“打开的编辑器”视图命令',
     );
+  });
+
+  test('INT-189 同一文件跨编辑器组只显示一个目录树文件项', async () => {
+    const api = await getApi();
+    const uri = projectUri(api, 'test-fixtures/workspace-one/src/app.ts');
+    const document = await vscode.workspace.openTextDocument(uri);
+    await vscode.window.showTextDocument(document, { viewColumn: vscode.ViewColumn.One, preview: false });
+    await vscode.window.showTextDocument(document, { viewColumn: vscode.ViewColumn.Two, preview: false });
+    await delay(150);
+
+    const matching = flattenNodes(api.openedFilesTree.provider.getRootsForIntegrationTest())
+      .filter((node) => node.kind === 'file' && node.uri === uri.toString());
+    assert.equal(matching.length, 1);
+  });
+
+  test('INT-190 Windows 路径按工作区安全归属且拒绝跨盘路径', () => {
+    if (process.platform !== 'win32') return;
+    const workspaceFolder: vscode.WorkspaceFolder = {
+      uri: vscode.Uri.file('D:\\workspace'),
+      name: 'workspace',
+      index: 0,
+    };
+
+    assert.equal(
+      getWorkspaceRelativePath(workspaceFolder, vscode.Uri.file('d:\\workspace\\src\\app.c')),
+      'src/app.c',
+    );
+    assert.equal(
+      getWorkspaceRelativePath(workspaceFolder, vscode.Uri.file('Y:\\other\\app.c')),
+      undefined,
+    );
+  });
+
+  test('INT-191 标题栏只提供文字形式的隐藏原生视图操作', () => {
+    const extension = vscode.extensions.getExtension('local-development.project-butler');
+    assert.ok(extension);
+    const contributes = extension.packageJSON.contributes as {
+      commands: Array<{ command: string; title: string; icon?: string }>;
+      menus: { 'view/title': Array<{ command: string; when?: string; group?: string }> };
+    };
+    const command = contributes.commands.find((item) => item.command === 'projectManager.hideNativeOpenEditors');
+    assert.deepEqual(command, {
+      command: 'projectManager.hideNativeOpenEditors',
+      title: '隐藏原生打开的编辑器',
+      category: '项目管家',
+    });
+    const titleActions = contributes.menus['view/title']
+      .filter((item) => item.when === 'view == projectManager.openedFilesView');
+    assert.equal(titleActions.filter((item) => item.command === 'projectManager.hideNativeOpenEditors').length, 1);
+    assert.equal(titleActions.some((item) => item.command === 'projectManager.restoreNativeOpenEditors'), false);
   });
 });
 
