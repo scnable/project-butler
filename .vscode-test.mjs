@@ -16,6 +16,8 @@ export default defineConfig([
       'dist/integrationTest/externalFiles.test.js',
       'dist/integrationTest/outline.test.js',
       'dist/integrationTest/buildAndSafety.test.js',
+      'dist/integrationTest/visuals.test.js',
+      'dist/integrationTest/todo.test.js',
     ],
     version: 'stable',
     extensionDevelopmentPath: projectRoot,
@@ -38,7 +40,7 @@ export default defineConfig([
     version: 'stable',
     extensionDevelopmentPath: path.join(projectRoot, 'test-fixtures', 'test-harness-extension'),
     workspaceFolder: path.join(projectRoot, 'test-fixtures', 'workspace-one'),
-    installExtensions: [path.join(projectRoot, 'releases', 'project-butler-0.7.5-preview-test-r16.vsix')],
+    installExtensions: [path.join(projectRoot, 'releases', 'project-butler-0.9.0-preview-test-r3.vsix')],
     skipExtensionDependencies: true,
     launchArgs: [
       '--disable-workspace-trust',

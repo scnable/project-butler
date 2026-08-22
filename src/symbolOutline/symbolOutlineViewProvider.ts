@@ -27,6 +27,7 @@ import { getSymbolOutlineHtml } from './webviewHtml';
 import { enhanceOutlineSymbols } from './outlineEnhancements';
 import { hasVscodeCommand } from '../platform/vscodeCapabilities';
 import { getIconResourceRoot } from '../visual/webviewIconResources';
+import { IconStyle, normalizeIconStyle } from '../visual/iconStyle';
 
 type OutlineAppearance = 'vscode' | 'sourceInsightLight' | 'sourceInsightBlack';
 type OutlineStatus = 'idle' | 'loading' | 'ready' | 'empty' | 'excluded' | 'unsupported' | 'error';
@@ -42,6 +43,7 @@ interface OutlinePreferences {
   highlightLongFunctions: boolean;
   highlightEditedSymbols: boolean;
   scale: number;
+  iconStyle: IconStyle;
 }
 
 interface CachedSymbols {
@@ -377,6 +379,9 @@ export class SymbolOutlineViewProvider implements vscode.WebviewViewProvider, vs
       highlightLongFunctions: configuration.get<boolean>('highlightLongFunctions', true),
       highlightEditedSymbols: configuration.get<boolean>('highlightEditedSymbols', true),
       scale: clamp(configuration.get<number>('scale', 100), 90, 150),
+      iconStyle: normalizeIconStyle(
+        vscode.workspace.getConfiguration('projectManager.visuals').get<unknown>('iconStyle'),
+      ),
     };
   }
 
@@ -466,7 +471,12 @@ export class SymbolOutlineViewProvider implements vscode.WebviewViewProvider, vs
   private handleConfigurationChanged(event: vscode.ConfigurationChangeEvent): void {
     const outlineChanged = event.affectsConfiguration('projectManager.symbolOutline');
     const filesExcludeChanged = event.affectsConfiguration('files.exclude');
-    if (!outlineChanged && !filesExcludeChanged) {
+    const visualsChanged = event.affectsConfiguration('projectManager.visuals.iconStyle');
+    if (!outlineChanged && !filesExcludeChanged && !visualsChanged) {
+      return;
+    }
+    if (visualsChanged && !outlineChanged && !filesExcludeChanged) {
+      void this.postState();
       return;
     }
     if (outlineChanged && this.preferences.followActiveEditor) {

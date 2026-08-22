@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { ConfigurationTreeNode, ConfigurationTreeProvider } from '../configuration/configurationTreeProvider';
-import { CatalogTabSettingKey, ProjectCatalogServiceV2, ResolvedCatalogProject } from './catalogServiceV2';
+import { CatalogTabSettingKey, CatalogTodoSettingKey, ProjectCatalogServiceV2, ResolvedCatalogProject } from './catalogServiceV2';
 import { ProjectCatalogTreeProviderV2 } from './catalogTreeProviderV2';
 
 export interface RegisteredProjectCatalogV2 {
@@ -82,6 +82,9 @@ export function registerProjectCatalogV2(
       if (key !== undefined) await service.configureTabSetting(key);
     }),
     vscode.commands.registerCommand('projectManager.configureCatalogOutlineMode', async () => service.configureOutlineMode()),
+    vscode.commands.registerCommand('projectManager.configureCatalogTodoSetting', async (key?: CatalogTodoSettingKey) => {
+      if (key !== undefined) await service.configureTodoSetting(key);
+    }),
     vscode.commands.registerCommand('projectManager.configurePersonalSetting', async (key?: Parameters<ConfigurationTreeProvider['configurePersonalSetting']>[0]) => {
       if (key !== undefined) await configurationProvider.configurePersonalSetting(key);
     }),

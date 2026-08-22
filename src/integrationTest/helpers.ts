@@ -38,7 +38,11 @@ export function currentWorkspaceUri(): vscode.Uri {
 
 export function createCatalogForWorkspace(
   name = '集成测试集合',
-  options: { readonly autoOrganize?: boolean; readonly outlineMode?: 'native' | 'enhanced' | 'both' } = {},
+  options: {
+    readonly autoOrganize?: boolean;
+    readonly outlineMode?: 'native' | 'enhanced' | 'both';
+    readonly todo?: StoredProjectCatalog['features']['todo'];
+  } = {},
 ): StoredProjectCatalog {
   const workspace = currentWorkspaceUri();
   const catalog = createStoredCatalog(name, [{
@@ -53,6 +57,7 @@ export function createCatalogForWorkspace(
     features: {
       tabs: { autoOrganize: options.autoOrganize ?? false },
       symbolOutline: { mode: options.outlineMode ?? 'both' },
+      todo: options.todo ?? {},
     },
   };
 }

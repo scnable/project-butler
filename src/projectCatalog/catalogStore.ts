@@ -4,13 +4,16 @@ import {
   CatalogSymbolOutlineSettings,
   CatalogTabSettings,
 } from './catalogModel';
+import { CatalogTodoOverrides } from '../todo/todoSettings';
+import { normalizeTodoTagName } from '../todo/todoTags';
 
-export const INTERNAL_CATALOG_STORAGE_VERSION = 2;
-const SUPPORTED_INTERNAL_CATALOG_STORAGE_VERSIONS = new Set([1, INTERNAL_CATALOG_STORAGE_VERSION]);
+export const INTERNAL_CATALOG_STORAGE_VERSION = 3;
+const SUPPORTED_INTERNAL_CATALOG_STORAGE_VERSIONS = new Set([1, 2, INTERNAL_CATALOG_STORAGE_VERSION]);
 
 export interface StoredCatalogFeatureOverrides {
   readonly tabs: Partial<CatalogTabSettings>;
   readonly symbolOutline: Partial<CatalogSymbolOutlineSettings>;
+  readonly todo: CatalogTodoOverrides;
 }
 
 export interface StoredCatalogProject {
@@ -73,6 +76,7 @@ export function createStoredCatalog(name: string, projects: readonly NewStoredPr
     features: {
       tabs: {},
       symbolOutline: {},
+      todo: {},
     },
     projects: projects.map(createStoredProject),
     createdAt: now,
@@ -234,7 +238,7 @@ function loadProjects(raw: unknown, catalogName: string, issues: string[]): Stor
 }
 
 function loadFeatures(raw: unknown, catalogName: string, issues: string[]): StoredCatalogFeatureOverrides {
-  const inheritedFeatures: StoredCatalogFeatureOverrides = { tabs: {}, symbolOutline: {} };
+  const inheritedFeatures: StoredCatalogFeatureOverrides = { tabs: {}, symbolOutline: {}, todo: {} };
   if (!isRecord(raw)) {
     if (raw !== undefined) {
       issues.push(`集合“${catalogName}”的功能配置无效，已改为跟随个人默认。`);
@@ -255,10 +259,45 @@ function loadFeatures(raw: unknown, catalogName: string, issues: string[]): Stor
     && (!isRecord(raw.symbolOutline) || raw.symbolOutline.mode !== undefined)) {
     issues.push(`集合“${catalogName}”的函数大纲配置无效，已改为跟随个人默认。`);
   }
+  const todo = loadTodoFeatures(raw.todo, catalogName, issues);
   return {
     tabs,
     symbolOutline: mode === undefined ? {} : { mode },
+    todo,
   };
+}
+
+function loadTodoFeatures(raw: unknown, catalogName: string, issues: string[]): CatalogTodoOverrides {
+  if (raw === undefined) return {};
+  if (!isRecord(raw)) {
+    issues.push(`集合“${catalogName}”的代码 TODO 配置无效，已改为跟随个人默认。`);
+    return {};
+  }
+  const result: { enabled?: boolean; tags?: readonly string[]; markdownTasks?: boolean } = {};
+  if (raw.enabled === undefined || typeof raw.enabled === 'boolean') {
+    if (typeof raw.enabled === 'boolean') result.enabled = raw.enabled;
+  } else {
+    issues.push(`集合“${catalogName}”的代码 TODO enabled 无效，已改为跟随个人默认。`);
+  }
+  const tags = readTodoTags(raw.tags);
+  if (raw.tags === undefined || tags !== undefined) {
+    if (tags !== undefined) result.tags = tags;
+  } else {
+    issues.push(`集合“${catalogName}”的代码 TODO tags 无效，已改为跟随个人默认。`);
+  }
+  if (raw.markdownTasks === undefined || typeof raw.markdownTasks === 'boolean') {
+    if (typeof raw.markdownTasks === 'boolean') result.markdownTasks = raw.markdownTasks;
+  } else {
+    issues.push(`集合“${catalogName}”的代码 TODO markdownTasks 无效，已改为跟随个人默认。`);
+  }
+  return result;
+}
+
+function readTodoTags(value: unknown): readonly string[] | undefined {
+  if (!Array.isArray(value) || value.length === 0) return undefined;
+  const normalized = value.map(normalizeTodoTagName);
+  if (normalized.some((item) => item === undefined)) return undefined;
+  return [...new Set(normalized as string[])];
 }
 
 function normalizeCatalogName(name: string): string {

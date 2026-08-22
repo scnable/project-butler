@@ -4,18 +4,20 @@ import { resolveEffectiveOutlineMode } from '../symbolOutline/outlineSettings';
 import { resolveEffectiveTabSettings } from '../tabManagement/tabSettings';
 import { detectVscodeCapabilities, VscodeCapabilities } from '../platform/vscodeCapabilities';
 import { IconSemantic } from '../visual/iconSemantics';
-import { createTreeIconPath } from '../visual/treeIconResources';
+import { createTreeIcon } from '../visual/treeIconResources';
+import { getTodoSettings } from '../todo/todoSettings';
 
 const COLLAPSE_STATE_KEY = 'projectManager.configurationView.groupExpansion';
 
-type GroupId = 'collection' | 'project' | 'ai' | 'external' | 'outlineAppearance';
+type GroupId = 'collection' | 'project' | 'todo' | 'ai' | 'external' | 'outlineAppearance';
 
 interface SummaryNode { readonly kind: 'summary' }
 interface GroupNode { readonly kind: 'group'; readonly id: GroupId }
-interface CollectionSettingNode { readonly kind: 'collectionSetting'; readonly key: 'autoOrganize' | 'outlineMode' }
+interface CollectionSettingNode { readonly kind: 'collectionSetting'; readonly key: 'autoOrganize' | 'outlineMode' | 'todoEnabled' | 'todoMarkdownTasks' }
 interface PersonalSettingNode { readonly kind: 'personalSetting'; readonly key: PersonalSettingKey }
+interface TodoActionNode { readonly kind: 'todoAction'; readonly key: 'owner' | 'tags' | 'shortcuts' }
 
-export type ConfigurationTreeNode = SummaryNode | GroupNode | CollectionSettingNode | PersonalSettingNode;
+export type ConfigurationTreeNode = SummaryNode | GroupNode | CollectionSettingNode | PersonalSettingNode | TodoActionNode;
 
 export type PersonalSettingKey = keyof typeof PERSONAL_SETTINGS;
 
@@ -66,6 +68,12 @@ const PERSONAL_SETTINGS = {
   externalColor: setting('外部文件前景色', 'projectManager.externalFiles', 'showColor', booleanChoices()),
   externalBadge: setting('外部文件 ‼ 徽标', 'projectManager.externalFiles', 'showBadge', booleanChoices()),
   externalStatus: setting('外部文件状态栏提醒', 'projectManager.externalFiles', 'showStatusBar', booleanChoices()),
+  iconStyle: setting('图标风格', 'projectManager.visuals', 'iconStyle', [
+    { label: '统一标识', value: 'unified' }, { label: 'VS Code 原生', value: 'native' },
+  ], undefined, '统一标识使用插件自有领域 SVG；VS Code 原生尽量回退到 ThemeIcon/Codicon。活动栏产品图标不随此项切换。'),
+  todoEnabled: setting('代码 TODO', 'projectManager.todo', 'enabled', booleanChoices(), undefined, '关闭后停止扫描并清空当前聚合结果；重新开启后在 TODO 视图可见时立即扫描。'),
+  todoMarkdownTasks: setting('Markdown 未完成项', 'projectManager.todo', 'markdownTasks', booleanChoices()),
+  todoHighlight: setting('编辑器标记高亮', 'projectManager.todo', 'highlight', booleanChoices(), undefined, '只突出当前可见编辑器中的关键词，不高亮整行。'),
   outlineScope: setting('符号范围', 'projectManager.symbolOutline', 'scope', [
     { label: '仅函数', value: 'functions' }, { label: '函数与类型', value: 'functionsAndTypes' }, { label: '全部符号', value: 'all' },
   ]),
@@ -95,6 +103,15 @@ const GROUP_CHILDREN: Record<GroupId, readonly ConfigurationTreeNode[]> = {
     { kind: 'personalSetting', key: 'openFilesView' },
     { kind: 'personalSetting', key: 'openMode' },
     { kind: 'personalSetting', key: 'confirmExclude' },
+    { kind: 'personalSetting', key: 'iconStyle' },
+  ],
+  todo: [
+    { kind: 'collectionSetting', key: 'todoEnabled' },
+    { kind: 'todoAction', key: 'owner' },
+    { kind: 'collectionSetting', key: 'todoMarkdownTasks' },
+    { kind: 'personalSetting', key: 'todoHighlight' },
+    { kind: 'todoAction', key: 'tags' },
+    { kind: 'todoAction', key: 'shortcuts' },
   ],
   ai: [
     { kind: 'personalSetting', key: 'disableAiFeatures' },
@@ -146,6 +163,7 @@ export class ConfigurationTreeProvider implements vscode.TreeDataProvider<Config
       { kind: 'summary' },
       { kind: 'group', id: 'collection' },
       { kind: 'group', id: 'project' },
+      { kind: 'group', id: 'todo' },
       { kind: 'group', id: 'ai' },
       { kind: 'group', id: 'external' },
       { kind: 'group', id: 'outlineAppearance' },
@@ -156,6 +174,7 @@ export class ConfigurationTreeProvider implements vscode.TreeDataProvider<Config
     if (node.kind === 'summary') return this.createSummaryItem();
     if (node.kind === 'group') return this.createGroupItem(node.id);
     if (node.kind === 'collectionSetting') return this.createCollectionSettingItem(node.key);
+    if (node.kind === 'todoAction') return this.createTodoActionItem(node.key);
     return this.createPersonalSettingItem(node.key);
   }
 
@@ -237,6 +256,7 @@ export class ConfigurationTreeProvider implements vscode.TreeDataProvider<Config
         semantic: 'catalog',
       },
       project: { label: '项目与资源操作', description: '个人偏好', icon: 'project', semantic: 'resources' },
+      todo: { label: '代码 TODO', description: '个人偏好 · 0.10.0', icon: 'checklist' },
       ai: {
         label: 'VS Code 内置 AI 功能',
         description: vscode.workspace.getConfiguration('chat').get<boolean>('disableAIFeatures', false) ? '已完全关闭' : '已开启',
@@ -270,6 +290,24 @@ export class ConfigurationTreeProvider implements vscode.TreeDataProvider<Config
         : '当前项目不属于活动集合，点击后修改个人默认值。';
       return item;
     }
+    if (key === 'todoEnabled' || key === 'todoMarkdownTasks') {
+      const settings = getTodoSettings(this.service.currentProjectTodoSettings);
+      const settingKey = key === 'todoEnabled' ? 'enabled' : 'markdownTasks';
+      const label = key === 'todoEnabled' ? '代码 TODO' : 'Markdown 未完成项';
+      const value = settings[settingKey];
+      const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.None);
+      item.description = `${value ? '开启' : '关闭'} · ${settings.sources[settingKey]}`;
+      item.iconPath = new vscode.ThemeIcon(value ? 'pass-filled' : 'circle-slash');
+      item.command = {
+        command: 'projectManager.configureCatalogTodoSetting',
+        title: `配置${label}`,
+        arguments: [settingKey],
+      };
+      item.tooltip = memberCatalog
+        ? `当前项目属于“${catalog.name}”。可设置集合覆盖值，或选择“跟随个人默认”。`
+        : '当前项目不属于活动集合，点击后修改个人默认值。';
+      return item;
+    }
     const effective = resolveEffectiveOutlineMode(this.service.currentProjectSymbolOutlineSettings);
     const item = new vscode.TreeItem('函数大纲模式', vscode.TreeItemCollapsibleState.None);
     item.description = `${formatMode(effective.mode)} · ${effective.source}`;
@@ -297,7 +335,9 @@ export class ConfigurationTreeProvider implements vscode.TreeDataProvider<Config
     const selected = definition.choices.find((choice) => choice.value === value);
     const item = new vscode.TreeItem(definition.label, vscode.TreeItemCollapsibleState.None);
     item.description = `${selected?.label ?? String(value ?? '使用插件默认值')}${effective !== value ? ' · 当前工作区覆盖' : ''}`;
-    item.iconPath = key === 'disableAiFeatures'
+    item.iconPath = key === 'iconStyle'
+      ? this.iconPath('preferences', 'symbol-color')
+      : key === 'disableAiFeatures'
       ? new vscode.ThemeIcon(value === true ? 'circle-slash' : 'sparkle')
       : typeof value === 'boolean'
       ? new vscode.ThemeIcon(value ? 'pass-filled' : 'circle-slash')
@@ -308,13 +348,40 @@ export class ConfigurationTreeProvider implements vscode.TreeDataProvider<Config
     return item;
   }
 
+  private createTodoActionItem(key: TodoActionNode['key']): vscode.TreeItem {
+    const settings = getTodoSettings(this.service.currentProjectTodoSettings);
+    const owner = settings.owner;
+    const definitions = {
+      owner: {
+        label: '个人标记标识', description: owner ?? '未设置', icon: 'account',
+        command: 'projectManager.todo.configureOwner', title: '设置个人标记标识',
+        tooltip: '快速标记会写成 TODO(个人标识)。修改标识时，旧值自动保留为历史别名。',
+      },
+      tags: {
+        label: '识别与快速标记关键词', description: `${settings.tagNames.length} 个 · ${settings.sources.tags}`, icon: 'tag',
+        command: 'projectManager.todo.manageTags', title: '管理代码 TODO 关键词',
+        tooltip: '启用或停用预置关键词。集合内项目可以保存集合覆盖值或恢复为跟随个人默认；个人标识不会进入集合。',
+      },
+      shortcuts: {
+        label: '快速标记快捷键', description: '设置', icon: 'keyboard',
+        command: 'projectManager.todo.configureShortcuts', title: '设置快速标记快捷键',
+        tooltip: '打开 VS Code 键盘快捷方式并定位快速标记命令。插件不强制占用默认快捷键。',
+      },
+    } as const;
+    const definition = definitions[key];
+    const item = new vscode.TreeItem(definition.label, vscode.TreeItemCollapsibleState.None);
+    item.description = definition.description;
+    item.iconPath = new vscode.ThemeIcon(definition.icon);
+    item.command = { command: definition.command, title: definition.title };
+    item.tooltip = definition.tooltip;
+    return item;
+  }
+
   private iconPath(
     semantic: IconSemantic,
     fallback: string,
-  ): vscode.ThemeIcon | ReturnType<typeof createTreeIconPath> {
-    return this.extensionUri === undefined
-      ? new vscode.ThemeIcon(fallback)
-      : createTreeIconPath(this.extensionUri, semantic);
+  ): ReturnType<typeof createTreeIcon> {
+    return createTreeIcon(this.extensionUri, semantic, fallback);
   }
 }
 

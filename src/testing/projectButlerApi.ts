@@ -5,6 +5,7 @@ import { RegisteredProjectCatalogV2 } from '../projectCatalog/registerProjectCat
 import { SymbolOutlineViewProvider } from '../symbolOutline/symbolOutlineViewProvider';
 import { TabManagementService } from '../tabManagement/tabManagementService';
 import { RegisteredOpenedFilesTree } from '../tabManagement/registerOpenedFilesTree';
+import { RegisteredTodo } from '../todo/registerTodo';
 
 /**
  * 扩展激活后返回的内部 API。生产功能不依赖此接口；集成测试使用它读取真实服务状态，
@@ -19,4 +20,5 @@ export interface ProjectButlerApi {
   readonly tabs: TabManagementService;
   readonly openedFilesTree: RegisteredOpenedFilesTree;
   readonly outline: SymbolOutlineViewProvider;
+  readonly todo: RegisteredTodo;
 }

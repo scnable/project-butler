@@ -347,9 +347,34 @@ suite('测试基础设施、上下文与项目集合生命周期', () => {
     const uri = projectUri(api, '.vscode-test/inherit.project-butler-export.json');
     const exported = JSON.parse(createExportText([catalog], uri).text) as { schemaVersion: number };
     const preview = parseImportText(JSON.stringify(exported), uri);
-    assert.equal(exported.schemaVersion, 2);
+    assert.equal(exported.schemaVersion, 3);
     assert.deepEqual(preview.catalogs[0]?.features.tabs, {});
     assert.deepEqual(preview.catalogs[0]?.features.symbolOutline, {});
+    assert.deepEqual(preview.catalogs[0]?.features.todo, {});
+  });
+
+  test('INT-212 导出导入集合级 TODO 字段且无效字段独立回退', async () => {
+    const api = await getApi();
+    const uri = projectUri(api, '.vscode-test/todo-features.project-butler-export.json');
+    const catalog = createCatalogForWorkspace('TODO 配置', {
+      todo: { enabled: true, tags: ['TODO', 'DEBUG'], markdownTasks: false },
+    });
+    const restored = parseImportText(createExportText([catalog], uri).text, uri);
+    assert.deepEqual(restored.catalogs[0]?.features.todo, {
+      enabled: true, tags: ['TODO', 'DEBUG'], markdownTasks: false,
+    });
+    assert.doesNotMatch(createExportText([catalog], uri).text, /owner|ownerAliases|highlight/iu);
+
+    const raw = JSON.parse(createExportText([catalog], uri).text) as {
+      collections: Array<{ features: { todo: Record<string, unknown> } }>;
+    };
+    raw.collections[0]!.features.todo = { enabled: 'invalid', tags: ['FIXME'], markdownTasks: true };
+    const partial = parseImportText(JSON.stringify(raw), uri);
+    assert.equal(partial.catalogs[0]?.features.todo.enabled, undefined);
+    assert.deepEqual(partial.catalogs[0]?.features.todo.tags, ['FIXME']);
+    assert.equal(partial.catalogs[0]?.features.todo.markdownTasks, true);
+    assert.ok(partial.defaultedFieldCount >= 1);
+    assert.ok(partial.messages.some((message) => message.includes('TODO enabled')));
   });
 
   test('INT-075 导入预览提供字段级兼容报告', async () => {

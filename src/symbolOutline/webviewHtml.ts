@@ -240,7 +240,8 @@ export function getSymbolOutlineHtml(
     }
     body.vscode-high-contrast [data-icon-semantic],
     body.vscode-high-contrast-light [data-icon-semantic],
-    body[data-appearance] [data-icon-rendering="mask"] {
+    body[data-appearance] [data-icon-rendering="mask"],
+    body[data-icon-style="native"] [data-icon-semantic] {
       background-color: currentColor;
       background-image: none;
       -webkit-mask-image: var(--icon-monochrome);
@@ -268,7 +269,7 @@ export function getSymbolOutlineHtml(
     .scale-value { width: 38px; text-align: right; color: var(--outline-muted); }
   </style>
 </head>
-<body data-appearance="vscode">
+<body data-appearance="vscode" data-icon-style="unified">
   <main class="shell">
     <section class="toolbar" aria-label="函数大纲工具栏">
       <select id="scope" title="符号范围" aria-label="符号范围">
@@ -355,6 +356,7 @@ export function getSymbolOutlineHtml(
       if (!state) return;
       currentState = state;
       document.body.dataset.appearance = state.preferences.appearance;
+      document.body.dataset.iconStyle = state.preferences.iconStyle;
       document.documentElement.style.setProperty('--outline-scale', String(state.preferences.scale / 100));
       elements.modeNotice.hidden = !state.nativeOutlineNotice;
       elements.modeNoticeSummary.hidden = state.nativeOutlineNoticeExpanded;

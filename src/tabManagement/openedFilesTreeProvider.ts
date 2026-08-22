@@ -6,7 +6,7 @@ import {
   OpenedFileDescriptor,
   OpenedFileTreeNode,
 } from './openedFilesTreeModel';
-import { createTreeIconPath } from '../visual/treeIconResources';
+import { createTreeIcon, createTreeIconPath, getConfiguredIconStyle } from '../visual/treeIconResources';
 import { getWorkspaceRelativePath } from '../shared/uri';
 
 export class OpenedFilesTreeProvider implements vscode.TreeDataProvider<OpenedFileTreeNode>, vscode.Disposable {
@@ -29,6 +29,9 @@ export class OpenedFilesTreeProvider implements vscode.TreeDataProvider<OpenedFi
       vscode.window.tabGroups.onDidChangeTabGroups(() => this.scheduleRefresh()),
       vscode.window.onDidChangeActiveTextEditor(() => this.scheduleRefresh()),
       vscode.workspace.onDidChangeWorkspaceFolders(() => this.scheduleRefresh()),
+      vscode.workspace.onDidChangeConfiguration((event) => {
+        if (event.affectsConfiguration('projectManager.visuals.iconStyle')) this.refresh();
+      }),
     );
   }
 
@@ -53,6 +56,12 @@ export class OpenedFilesTreeProvider implements vscode.TreeDataProvider<OpenedFi
     if (node.kind === 'file') {
       const item = new vscode.TreeItem(node.label, vscode.TreeItemCollapsibleState.None);
       if (node.uri !== undefined) item.resourceUri = vscode.Uri.parse(node.uri);
+      if (this.extensionUri !== undefined && getConfiguredIconStyle() === 'unified') {
+        item.iconPath = createTreeIconPath(
+          this.extensionUri,
+          node.external ? 'external-file' : 'file',
+        );
+      }
       const description = node.external ? '工作区外' : node.preview ? '预览' : node.active ? '当前' : undefined;
       if (description !== undefined) item.description = description;
       item.contextValue = node.external
@@ -74,15 +83,13 @@ export class OpenedFilesTreeProvider implements vscode.TreeDataProvider<OpenedFi
     item.id = node.id;
     item.contextValue = `projectManager.openedFiles.${node.kind}.${collapsed ? 'collapsed' : 'expanded'}`;
     item.tooltip = `${node.label}\n默认保持展开；使用右键命令折叠或展开。`;
-    item.iconPath = node.kind === 'externalGroup' && this.extensionUri !== undefined
-      ? createTreeIconPath(this.extensionUri, 'external-file')
-      : new vscode.ThemeIcon(node.kind === 'group'
+    item.iconPath = node.kind === 'workspace'
+      ? createTreeIcon(this.extensionUri, 'workspace', 'root-folder')
+      : node.kind === 'externalGroup'
+        ? createTreeIcon(this.extensionUri, 'external-file', 'warning')
+        : new vscode.ThemeIcon(node.kind === 'group'
         ? 'layout'
-        : node.kind === 'workspace'
-          ? 'root-folder'
-          : node.kind === 'externalGroup'
-            ? 'warning'
-            : 'folder');
+        : 'folder');
     return item;
   }
 

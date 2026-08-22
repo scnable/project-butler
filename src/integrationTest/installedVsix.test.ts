@@ -9,7 +9,7 @@ suite('已安装 VSIX', () => {
   test('INT-158 隔离环境安装 VSIX 后扩展标识、版本和激活正确', async () => {
     const extension = vscode.extensions.getExtension<ProjectButlerApi>(EXTENSION_ID);
     assert.ok(extension);
-    assert.equal(extension.packageJSON.version, '0.7.5');
+    assert.equal(extension.packageJSON.version, '0.10.0');
     const api = await extension.activate();
     assert.equal(api.context.extensionMode, vscode.ExtensionMode.Production);
     assert.ok(api.catalogs.service);

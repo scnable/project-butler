@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { ProjectCatalogServiceV2, ResolvedCatalogProject } from './catalogServiceV2';
 import { IconSemantic } from '../visual/iconSemantics';
-import { createTreeIconPath } from '../visual/treeIconResources';
+import { createTreeIcon } from '../visual/treeIconResources';
 
 interface CatalogSummaryNode { readonly kind: 'summary' }
 interface CatalogContextNode { readonly kind: 'context' }
@@ -18,7 +18,14 @@ export class ProjectCatalogTreeProviderV2 implements vscode.TreeDataProvider<Pro
     private readonly service: ProjectCatalogServiceV2,
     private readonly extensionUri?: vscode.Uri,
   ) {
-    this.subscriptions = [service.onDidChange(() => this.changeEmitter.fire(undefined))];
+    this.subscriptions = [
+      service.onDidChange(() => this.changeEmitter.fire(undefined)),
+      vscode.workspace.onDidChangeConfiguration((event) => {
+        if (event.affectsConfiguration('projectManager.visuals.iconStyle')) {
+          this.changeEmitter.fire(undefined);
+        }
+      }),
+    ];
   }
 
   public getChildren(): ProjectCatalogTreeNodeV2[] {
@@ -101,10 +108,8 @@ export class ProjectCatalogTreeProviderV2 implements vscode.TreeDataProvider<Pro
   private iconPath(
     semantic: IconSemantic,
     fallback: string,
-  ): vscode.ThemeIcon | ReturnType<typeof createTreeIconPath> {
-    return this.extensionUri === undefined
-      ? new vscode.ThemeIcon(fallback)
-      : createTreeIconPath(this.extensionUri, semantic);
+  ): ReturnType<typeof createTreeIcon> {
+    return createTreeIcon(this.extensionUri, semantic, fallback);
   }
 }
 

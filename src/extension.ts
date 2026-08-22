@@ -8,6 +8,8 @@ import { registerSymbolOutline } from './symbolOutline/symbolOutlineViewProvider
 import { registerTabManagement } from './tabManagement/registerTabManagement';
 import { registerOpenedFilesTree } from './tabManagement/registerOpenedFilesTree';
 import { ProjectButlerApi } from './testing/projectButlerApi';
+import { registerTodo } from './todo/registerTodo';
+import { bindTodoFeatureConfigurationSource } from './todo/todoSettings';
 
 export function activate(context: vscode.ExtensionContext): ProjectButlerApi {
   const output = vscode.window.createOutputChannel('项目管家');
@@ -30,9 +32,11 @@ export function activate(context: vscode.ExtensionContext): ProjectButlerApi {
   registerExcludeResourcesCommand(context, exclusionService, output);
   registerManageExclusionsCommand(context, exclusionService, output);
   const catalogs = registerProjectCatalogV2(context, output);
+  context.subscriptions.push(bindTodoFeatureConfigurationSource(catalogs.service));
   const tabs = registerTabManagement(context, output, catalogs.service);
   const openedFilesTree = registerOpenedFilesTree(context, output);
   const outline = registerSymbolOutline(context, output, catalogs.service);
+  const todo = registerTodo(context, output, catalogs.service);
   output.appendLine('项目管家已激活。');
   return {
     context,
@@ -43,6 +47,7 @@ export function activate(context: vscode.ExtensionContext): ProjectButlerApi {
     tabs,
     openedFilesTree,
     outline,
+    todo,
   };
 }
 

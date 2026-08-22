@@ -8,6 +8,7 @@ import {
 } from '../configuration/configurationTreeProvider';
 import { createStoredCatalog } from '../projectCatalog/catalogStore';
 import { resolveVscodeCapabilities } from '../platform/vscodeCapabilitiesModel';
+import { getTodoSettings } from '../todo/todoSettings';
 import {
   createCatalogForWorkspace,
   getApi,
@@ -64,6 +65,7 @@ suite('配置侧栏、优先级与实时生效', () => {
     assert.deepEqual(labels, [
       '当前生效功能',
       '项目与资源操作',
+      '代码 TODO',
       'VS Code 内置 AI 功能',
       '工作区外文件提醒',
       '函数大纲显示',
@@ -111,6 +113,7 @@ suite('配置侧栏、优先级与实时生效', () => {
     assert.equal(api.catalogs.service.projectContext.kind, 'member');
     assert.equal(api.catalogs.service.currentProjectTabSettings, undefined);
     assert.equal(api.catalogs.service.currentProjectSymbolOutlineSettings, undefined);
+    assert.equal(api.catalogs.service.currentProjectTodoSettings, undefined);
 
     const group = api.catalogs.configurationProvider.getChildren()
       .find((node) => node.kind === 'group' && node.id === 'collection');
@@ -118,6 +121,35 @@ suite('配置侧栏、优先级与实时生效', () => {
     const descriptions = api.catalogs.configurationProvider.getChildren(group)
       .map((node) => String(api.catalogs.configurationProvider.getTreeItem(node).description));
     assert.equal(descriptions.some((description) => description.includes('项目集合')), false);
+  });
+
+  test('INT-213 集合级 TODO 覆盖按字段生效并可恢复跟随个人默认', async () => {
+    const api = await getApi();
+    await setGlobalSetting('projectManager.todo', 'enabled', true);
+    await setGlobalSetting('projectManager.todo', 'markdownTasks', true);
+    const catalog = createCatalogForWorkspace('TODO 集合配置');
+    await seedCatalogs(api, [catalog], catalog.id);
+    assert.equal(await api.catalogs.service.updateCurrentTodoSetting('enabled', false, false), true);
+    assert.equal(await api.catalogs.service.updateCurrentTodoSetting('markdownTasks', false, false), true);
+    assert.equal(await api.catalogs.service.updateCurrentTodoTags(['FIXME', 'DEBUG'], false), true);
+    let settings = getTodoSettings(api.catalogs.service.currentProjectTodoSettings);
+    assert.equal(settings.enabled, false);
+    assert.equal(settings.markdownTasks, false);
+    assert.deepEqual(settings.tagNames, ['FIXME', 'DEBUG']);
+    assert.deepEqual(settings.sources, {
+      enabled: '项目集合', tags: '项目集合', markdownTasks: '项目集合',
+    });
+    const todoGroup = api.catalogs.configurationProvider.getChildren()
+      .find((node) => node.kind === 'group' && node.id === 'todo');
+    assert.ok(todoGroup);
+    const todoDescriptions = api.catalogs.configurationProvider.getChildren(todoGroup)
+      .map((node) => String(api.catalogs.configurationProvider.getTreeItem(node).description));
+    assert.ok(todoDescriptions.filter((description) => description.includes('项目集合')).length >= 3);
+
+    await api.catalogs.service.updateCurrentTodoSetting('enabled', undefined, false);
+    settings = getTodoSettings(api.catalogs.service.currentProjectTodoSettings);
+    assert.equal(settings.enabled, true);
+    assert.equal(settings.sources.enabled, '全局个人设置');
   });
 
   test('INT-024 个人非项目标签自动移至末尾默认值写入用户作用域', async () => {

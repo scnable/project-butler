@@ -16,7 +16,7 @@ media/icons/baseline/manifest.json
 media/icons/source/**
 media/icons/palette.json
 media/icons/icon-manifest.schema.json
-scripts/generate-icons.mjs
+scripts/**
 .vscode-test-*.mjs
 AGENTS.md
 需求文档.md

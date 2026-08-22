@@ -9,9 +9,10 @@ import {
   stripTrailingCommas,
 } from './catalogModel';
 import { createStoredCatalog, NewStoredProject, StoredProjectCatalog } from './catalogStore';
+import { normalizeTodoTagName } from '../todo/todoTags';
 
 export const CATALOG_EXPORT_FORMAT = 'project-butler-export';
-export const CATALOG_EXPORT_VERSION = 2;
+export const CATALOG_EXPORT_VERSION = 3;
 
 interface ExportProject {
   readonly alias: string;
@@ -157,6 +158,10 @@ function parseExportEnvelope(raw: Record<string, unknown>, sourceUri: vscode.Uri
         messages.push(`集合“${name}”的函数大纲覆盖值无效，已改为跟随个人默认。`);
       }
     }
+    const todoResult = parseTodoOverrides(rawFeatures.todo, name);
+    appliedFieldCount += todoResult.appliedFieldCount;
+    defaultedFieldCount += todoResult.defaultedFieldCount;
+    messages.push(...todoResult.messages);
     const projects: NewStoredProject[] = [];
     if (!Array.isArray(value.projects)) {
       defaultedFieldCount += 1;
@@ -208,6 +213,7 @@ function parseExportEnvelope(raw: Record<string, unknown>, sourceUri: vscode.Uri
       features: {
         tabs: autoOrganize === undefined ? {} : { autoOrganize },
         symbolOutline: mode === undefined ? {} : { mode },
+        todo: todoResult.todo,
       },
     });
   }
@@ -246,7 +252,14 @@ function parseLegacyCatalog(text: string, sourceUri: vscode.Uri): ImportPreview 
   }
   const catalog = createStoredCatalog(legacy.name ?? path.posix.basename(sourceUri.path, '.project-butler.json'), projects);
   return {
-    catalogs: [{ ...catalog, features: legacy.features }],
+    catalogs: [{
+      ...catalog,
+      features: {
+        tabs: legacy.features.tabs,
+        symbolOutline: legacy.features.symbolOutline,
+        todo: {},
+      },
+    }],
     appliedFieldCount: projects.length * 3 + 3,
     defaultedFieldCount: legacy.issues.filter((issue) => issue.severity === 'warning').length,
     ignoredFieldCount,
@@ -254,6 +267,57 @@ function parseLegacyCatalog(text: string, sourceUri: vscode.Uri): ImportPreview 
     messages,
     sourceKind: 'legacy',
   };
+}
+
+function parseTodoOverrides(raw: unknown, catalogName: string): {
+  readonly todo: StoredProjectCatalog['features']['todo'];
+  readonly appliedFieldCount: number;
+  readonly defaultedFieldCount: number;
+  readonly messages: readonly string[];
+} {
+  if (raw === undefined) {
+    return { todo: {}, appliedFieldCount: 3, defaultedFieldCount: 0, messages: [] };
+  }
+  if (!isRecord(raw)) {
+    return {
+      todo: {}, appliedFieldCount: 0, defaultedFieldCount: 3,
+      messages: [`集合“${catalogName}”的代码 TODO 配置无效，全部字段已改为跟随个人默认。`],
+    };
+  }
+  const todo: { enabled?: boolean; tags?: readonly string[]; markdownTasks?: boolean } = {};
+  const messages: string[] = [];
+  let appliedFieldCount = 0;
+  let defaultedFieldCount = 0;
+  if (raw.enabled === undefined || typeof raw.enabled === 'boolean') {
+    appliedFieldCount += 1;
+    if (typeof raw.enabled === 'boolean') todo.enabled = raw.enabled;
+  } else {
+    defaultedFieldCount += 1;
+    messages.push(`集合“${catalogName}”的代码 TODO enabled 无效，已改为跟随个人默认。`);
+  }
+  const tags = readTodoTags(raw.tags);
+  if (raw.tags === undefined || tags !== undefined) {
+    appliedFieldCount += 1;
+    if (tags !== undefined) todo.tags = tags;
+  } else {
+    defaultedFieldCount += 1;
+    messages.push(`集合“${catalogName}”的代码 TODO tags 无效，已改为跟随个人默认。`);
+  }
+  if (raw.markdownTasks === undefined || typeof raw.markdownTasks === 'boolean') {
+    appliedFieldCount += 1;
+    if (typeof raw.markdownTasks === 'boolean') todo.markdownTasks = raw.markdownTasks;
+  } else {
+    defaultedFieldCount += 1;
+    messages.push(`集合“${catalogName}”的代码 TODO markdownTasks 无效，已改为跟随个人默认。`);
+  }
+  return { todo, appliedFieldCount, defaultedFieldCount, messages };
+}
+
+function readTodoTags(value: unknown): readonly string[] | undefined {
+  if (!Array.isArray(value) || value.length === 0) return undefined;
+  const normalized = value.map(normalizeTodoTagName);
+  if (normalized.some((item) => item === undefined)) return undefined;
+  return [...new Set(normalized as string[])];
 }
 
 function createRelativePath(exportUri: vscode.Uri, projectUri: vscode.Uri): string | undefined {

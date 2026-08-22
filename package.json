@@ -2,7 +2,7 @@
   "name": "project-butler",
   "displayName": "项目管家",
   "description": "增强 VS Code 的项目切换、代码浏览、标签组织和便携开发设置。",
-  "version": "0.7.5",
+  "version": "0.10.0",
   "publisher": "local-development",
   "license": "UNLICENSED",
   "repository": {
@@ -30,6 +30,7 @@
     "onLanguage:jsonc",
     "onView:projectManager.projectsView",
     "onView:projectManager.configurationView",
+    "onView:projectManager.todoView",
     "onView:projectManager.symbolOutlineView",
     "onView:projectManager.openedFilesView",
     "onView:projectManager.enhancedSymbolOutlineView"
@@ -85,6 +86,12 @@
         }
       ],
       "explorer": [
+        {
+          "id": "projectManager.todoView",
+          "name": "代码 TODO",
+          "contextualTitle": "代码浏览",
+          "visibility": "collapsed"
+        },
         {
           "id": "projectManager.openedFilesView",
           "name": "已打开文件目录",
@@ -281,6 +288,12 @@
         "icon": "$(symbol-method)"
       },
       {
+        "command": "projectManager.configureCatalogTodoSetting",
+        "title": "项目管家: 修改集合代码 TODO 设置",
+        "category": "项目管家",
+        "icon": "$(checklist)"
+      },
+      {
         "command": "projectManager.refreshSymbolOutline",
         "title": "项目管家: 刷新当前文件函数大纲",
         "category": "项目管家",
@@ -354,6 +367,104 @@
         "title": "从当前集合移出",
         "category": "项目管家",
         "icon": "$(remove)"
+      },
+      {
+        "command": "projectManager.todo.refresh",
+        "title": "项目管家: 刷新代码 TODO",
+        "category": "项目管家",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "projectManager.todo.cancel",
+        "title": "取消代码 TODO 扫描",
+        "category": "项目管家",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "projectManager.todo.selectScope",
+        "title": "选择代码 TODO 扫描范围",
+        "category": "项目管家",
+        "icon": "$(target)"
+      },
+      {
+        "command": "projectManager.todo.selectGrouping",
+        "title": "选择代码 TODO 分组方式",
+        "category": "项目管家",
+        "icon": "$(list-tree)"
+      },
+      {
+        "command": "projectManager.todo.filter",
+        "title": "筛选代码 TODO",
+        "category": "项目管家",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "projectManager.todo.clearFilter",
+        "title": "清除代码 TODO 筛选",
+        "category": "项目管家",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "projectManager.todo.open",
+        "title": "打开代码 TODO",
+        "category": "项目管家"
+      },
+      {
+        "command": "projectManager.todo.manageTags",
+        "title": "项目管家: 管理代码 TODO 关键词",
+        "category": "项目管家",
+        "icon": "$(tag)"
+      },
+      {
+        "command": "projectManager.todo.addTag",
+        "title": "项目管家: 添加自定义 TODO 关键词",
+        "category": "项目管家",
+        "icon": "$(add)"
+      },
+      {
+        "command": "projectManager.todo.configureOwner",
+        "title": "项目管家: 设置个人标记标识",
+        "category": "项目管家"
+      },
+      {
+        "command": "projectManager.todo.quickMark",
+        "title": "项目管家: 快速标记当前行或选区",
+        "category": "项目管家"
+      },
+      {
+        "command": "projectManager.todo.repeatLastMark",
+        "title": "项目管家: 使用上次类型快速标记",
+        "category": "项目管家"
+      },
+      {
+        "command": "projectManager.todo.changeMark",
+        "title": "项目管家: 修改当前注释标记",
+        "category": "项目管家"
+      },
+      {
+        "command": "projectManager.todo.toggleCompleted",
+        "title": "项目管家: 完成/取消完成当前标记",
+        "category": "项目管家"
+      },
+      {
+        "command": "projectManager.todo.removeMark",
+        "title": "项目管家: 删除当前注释标记",
+        "category": "项目管家"
+      },
+      {
+        "command": "projectManager.todo.assignToMe",
+        "title": "项目管家: 标记为我的",
+        "category": "项目管家"
+      },
+      {
+        "command": "projectManager.todo.unassignMine",
+        "title": "项目管家: 取消我的标记归属",
+        "category": "项目管家"
+      },
+      {
+        "command": "projectManager.todo.configureShortcuts",
+        "title": "项目管家: 设置快速标记快捷键",
+        "category": "项目管家"
       }
     ],
     "menus": {
@@ -386,6 +497,33 @@
           "command": "projectManager.organizeCurrentTabGroup",
           "when": "resourceScheme == file || resourceScheme == vscode-remote",
           "group": "projectManager@1"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "projectManager.todo.quickMark",
+          "when": "editorTextFocus",
+          "group": "projectManager@10"
+        },
+        {
+          "command": "projectManager.todo.repeatLastMark",
+          "when": "editorTextFocus",
+          "group": "projectManager@11"
+        },
+        {
+          "command": "projectManager.todo.changeMark",
+          "when": "editorTextFocus",
+          "group": "projectManager@12"
+        },
+        {
+          "command": "projectManager.todo.toggleCompleted",
+          "when": "editorTextFocus",
+          "group": "projectManager@13"
+        },
+        {
+          "command": "projectManager.todo.removeMark",
+          "when": "editorTextFocus",
+          "group": "projectManager@14"
         }
       ],
       "view/title": [
@@ -458,6 +596,46 @@
           "command": "projectManager.resolveNativeOutlineConflict",
           "when": "false",
           "group": "navigation@1"
+        },
+        {
+          "command": "projectManager.todo.refresh",
+          "when": "view == projectManager.todoView && !projectManager.todoScanning",
+          "group": "navigation@1"
+        },
+        {
+          "command": "projectManager.todo.cancel",
+          "when": "view == projectManager.todoView && projectManager.todoScanning",
+          "group": "navigation@1"
+        },
+        {
+          "command": "projectManager.todo.selectScope",
+          "when": "view == projectManager.todoView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "projectManager.todo.selectGrouping",
+          "when": "view == projectManager.todoView",
+          "group": "navigation@3"
+        },
+        {
+          "command": "projectManager.todo.filter",
+          "when": "view == projectManager.todoView",
+          "group": "navigation@4"
+        },
+        {
+          "command": "projectManager.todo.clearFilter",
+          "when": "view == projectManager.todoView && projectManager.todoFilterActive",
+          "group": "navigation@4.1"
+        },
+        {
+          "command": "projectManager.todo.manageTags",
+          "when": "view == projectManager.todoView",
+          "group": "navigation@5"
+        },
+        {
+          "command": "projectManager.todo.addTag",
+          "when": "view == projectManager.todoView",
+          "group": "navigation@6"
         }
       ],
       "view/item/context": [
@@ -500,6 +678,31 @@
           "command": "projectManager.removeProjectFromCatalog",
           "when": "view == projectManager.projectsView && (viewItem == projectCatalog.availableProject || viewItem == projectCatalog.invalidProject)",
           "group": "projectCatalogMembership@1"
+        },
+        {
+          "command": "projectManager.todo.changeMark",
+          "when": "view == projectManager.todoView && (viewItem == projectManager.todo.result.mine || viewItem == projectManager.todo.result.other)",
+          "group": "todoEdit@1"
+        },
+        {
+          "command": "projectManager.todo.toggleCompleted",
+          "when": "view == projectManager.todoView && (viewItem == projectManager.todo.result.mine || viewItem == projectManager.todo.result.other)",
+          "group": "todoEdit@2"
+        },
+        {
+          "command": "projectManager.todo.removeMark",
+          "when": "view == projectManager.todoView && (viewItem == projectManager.todo.result.mine || viewItem == projectManager.todo.result.other)",
+          "group": "todoEdit@3"
+        },
+        {
+          "command": "projectManager.todo.assignToMe",
+          "when": "view == projectManager.todoView && viewItem == projectManager.todo.result.other",
+          "group": "todoOwner@1"
+        },
+        {
+          "command": "projectManager.todo.unassignMine",
+          "when": "view == projectManager.todoView && viewItem == projectManager.todo.result.mine",
+          "group": "todoOwner@2"
         }
       ],
       "commandPalette": [
@@ -577,6 +780,73 @@
           "default": true,
           "scope": "window",
           "description": "活动编辑器位于工作区外时，是否显示状态栏提醒。"
+        },
+        "projectManager.visuals.iconStyle": {
+          "type": "string",
+          "enum": [
+            "unified",
+            "native"
+          ],
+          "enumDescriptions": [
+            "使用插件统一设计的领域 SVG 图标。",
+            "项目树、配置树和增强大纲尽量回退到 VS Code 原生 ThemeIcon/Codicon 风格。"
+          ],
+          "default": "unified",
+          "scope": "window",
+          "description": "个人外观偏好。切换后相关视图立即刷新；活动栏产品图标始终使用插件主标识。"
+        },
+        "projectManager.todo.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "description": "是否启用代码 TODO 扫描、聚合和快速标记入口。"
+        },
+        "projectManager.todo.tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$"
+          },
+          "uniqueItems": true,
+          "default": [
+            "TODO",
+            "FIXME",
+            "BUG",
+            "HACK",
+            "XXX"
+          ],
+          "scope": "window",
+          "description": "需要识别和用于快速标记的关键词。DEBUG、NOTE、OPTIMIZE、REVIEW 为可选预置项；不支持正则表达式。"
+        },
+        "projectManager.todo.owner": {
+          "type": "string",
+          "pattern": "^(?:|[A-Za-z0-9][A-Za-z0-9_.-]{0,31})$",
+          "default": "",
+          "scope": "window",
+          "description": "个人源码标记标识。快速标记使用 TODO(标识) 格式；不会自动读取系统用户名、邮箱或 Git 身份。"
+        },
+        "projectManager.todo.ownerAliases": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,31}$"
+          },
+          "uniqueItems": true,
+          "default": [],
+          "scope": "window",
+          "description": "用于识别旧个人标记的历史标识。通过插件修改个人标识时会自动保留旧值。"
+        },
+        "projectManager.todo.markdownTasks": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "description": "是否把 Markdown 的未完成项 - [ ] 作为代码 TODO 结果。"
+        },
+        "projectManager.todo.highlight": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "description": "是否在当前可见文本编辑器中突出代码 TODO 关键词。"
         },
         "projectManager.projectCatalog.openMode": {
           "type": "string",
@@ -754,7 +1024,8 @@
     "test:unit": "npm run icons:check && npm run compile && node --test \"dist/test/**/*.test.js\"",
     "test:integration": "npm run package:vsix && vscode-test",
     "test:all": "npm run test:unit && npm run test:integration",
-    "package:vsix": "vsce package --pre-release --no-dependencies --out releases/project-butler-0.7.5-preview-test-r16.vsix"
+    "benchmark:todo": "npm run compile && node --expose-gc scripts/todo-benchmark.mjs",
+    "package:vsix": "vsce package --pre-release --no-dependencies --out releases/project-butler-0.10.0-preview-test.vsix"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",

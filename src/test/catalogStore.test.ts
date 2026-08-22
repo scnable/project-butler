@@ -22,6 +22,7 @@ describe('内部项目集合存储', () => {
     assert.equal(catalog.id.length > 0, true);
     assert.deepEqual(catalog.features.tabs, {});
     assert.deepEqual(catalog.features.symbolOutline, {});
+    assert.deepEqual(catalog.features.todo, {});
   });
 
   it('规范化项目别名、说明和标签', () => {
@@ -46,6 +47,7 @@ describe('内部项目集合存储', () => {
         features: {
           tabs: { autoOrganize: true },
           symbolOutline: { mode: 'invalid' },
+          todo: { enabled: false, tags: ['todo', 'FIXME'], markdownTasks: 'invalid' },
         },
         projects: [],
         createdAt: '2026-08-13T00:00:00.000Z',
@@ -54,7 +56,23 @@ describe('内部项目集合存储', () => {
     });
     assert.equal(result.library.catalogs[0]?.features.tabs.autoOrganize, true);
     assert.equal(result.library.catalogs[0]?.features.symbolOutline.mode, undefined);
+    assert.equal(result.library.catalogs[0]?.features.todo.enabled, false);
+    assert.deepEqual(result.library.catalogs[0]?.features.todo.tags, ['TODO', 'FIXME']);
+    assert.equal(result.library.catalogs[0]?.features.todo.markdownTasks, undefined);
     assert.equal(result.issues.some((issue) => issue.includes('函数大纲配置')), true);
+    assert.equal(result.issues.some((issue) => issue.includes('markdownTasks')), true);
+  });
+
+  it('兼容旧内部存储并让缺失的 TODO 字段跟随个人默认', () => {
+    const result = loadCatalogLibrary({
+      storageVersion: 2,
+      catalogs: [{
+        id: 'legacy', name: '旧集合', features: { tabs: {}, symbolOutline: {} }, projects: [],
+        createdAt: '2026-08-13T00:00:00.000Z', updatedAt: '2026-08-13T00:00:00.000Z',
+      }],
+    });
+    assert.equal(result.library.storageVersion, 3);
+    assert.deepEqual(result.library.catalogs[0]?.features.todo, {});
   });
 
   it('新增和更新集合时不改变其他集合', () => {

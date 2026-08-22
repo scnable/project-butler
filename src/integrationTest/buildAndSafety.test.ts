@@ -28,7 +28,7 @@ suite('构建、错误隔离、安全与性能', () => {
   test('INT-157 VSIX 内容规则排除源码、测试、夹具和缓存', async () => {
     const api = await getApi();
     const ignore = new TextDecoder().decode(await vscode.workspace.fs.readFile(projectUri(api, '.vscodeignore')));
-    for (const rule of ['node_modules/**', '.local-tools/**', 'src/**', 'test-fixtures/**', 'dist/integrationTest/**', '**/*.test.js', '.vscode-test.*']) {
+    for (const rule of ['node_modules/**', '.local-tools/**', 'src/**', 'scripts/**', 'test-fixtures/**', 'dist/integrationTest/**', '**/*.test.js', '.vscode-test.*']) {
       assert.match(ignore, new RegExp(escapeRegExp(rule)));
     }
     const packageText = new TextDecoder().decode(await vscode.workspace.fs.readFile(projectUri(api, 'package.json')));
@@ -47,6 +47,7 @@ suite('构建、错误隔离、安全与性能', () => {
       'extension/test-fixtures/',
       'extension/.local-tools/',
       'extension/node_modules/',
+      'extension/scripts/',
       'extension/dist/integrationTest/',
       'extension/dist/testing/',
     ];
@@ -79,16 +80,17 @@ suite('构建、错误隔离、安全与性能', () => {
     assert.equal(document.isDirty, false);
   });
 
-  test('INT-163 插件只允许明确限定于集合元数据的移出和重命名命令', () => {
+  test('INT-163 具有删除或重命名语义的命令均限定到安全对象', () => {
     const extension = vscode.extensions.getExtension('local-development.project-butler')!;
     const commands = (extension.packageJSON.contributes.commands as Array<{ command: string }>).map((item) => item.command.toLocaleLowerCase());
-    const allowedCatalogMetadataCommands = new Set([
+    const allowedScopedMutationCommands = new Set([
       'projectmanager.renamecatalog',
       'projectmanager.renameprojectalias',
       'projectmanager.removeprojectfromcatalog',
+      'projectmanager.todo.removemark',
     ]);
     const unsafeCommands = commands.filter((command) => /delete|remove|rename|movefile/.test(command)
-      && !allowedCatalogMetadataCommands.has(command));
+      && !allowedScopedMutationCommands.has(command));
     assert.deepEqual(unsafeCommands, []);
   });
 

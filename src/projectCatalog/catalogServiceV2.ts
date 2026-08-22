@@ -1,6 +1,7 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { ProjectFeatureConfigurationSource } from '../configuration/configurationTypes';
+import { CatalogTodoOverrides } from '../todo/todoSettings';
 import {
   CatalogSymbolOutlineSettings,
   CatalogTabSettings,
@@ -32,6 +33,7 @@ const RESTORE_SUPPRESSED_KEY = 'projectManager.catalogLibrary.restoreSuppressed'
 const LEGACY_WORKSPACE_CATALOG_KEY = 'projectManager.projectCatalog.workspaceUri';
 
 export type CatalogTabSettingKey = keyof CatalogTabSettings;
+export type CatalogTodoSettingKey = 'enabled' | 'markdownTasks';
 
 export interface ResolvedCatalogProject {
   readonly catalogId: string;
@@ -112,6 +114,12 @@ export class ProjectCatalogServiceV2 implements vscode.Disposable, ProjectFeatur
     if (this.projectContext.kind !== 'member') return undefined;
     const mode = this.activeCatalog?.features.symbolOutline.mode;
     return mode === undefined ? undefined : { mode };
+  }
+
+  public get currentProjectTodoSettings(): CatalogTodoOverrides | undefined {
+    if (this.projectContext.kind !== 'member') return undefined;
+    const todo = this.activeCatalog?.features.todo;
+    return todo === undefined || Object.keys(todo).length === 0 ? undefined : todo;
   }
 
   public async initialize(): Promise<void> {
@@ -531,6 +539,41 @@ export class ProjectCatalogServiceV2 implements vscode.Disposable, ProjectFeatur
     return true;
   }
 
+  public async configureTodoSetting(key: CatalogTodoSettingKey): Promise<void> {
+    const target = this.projectContext.kind === 'member' ? this.getStoredActiveCatalog() : undefined;
+    const label = key === 'enabled' ? '代码 TODO' : 'Markdown 未完成项';
+    if (target === undefined) {
+      await this.configurePersonalValue('projectManager.todo', key, [
+        { label: '开启', value: true },
+        { label: '关闭', value: false },
+      ], `个人默认：${label}`);
+      return;
+    }
+    const current = target.features.todo[key];
+    const selected = await vscode.window.showQuickPick([
+      { label: '跟随个人默认', description: current === undefined ? '当前值' : '', value: undefined },
+      { label: '开启', description: current === true ? '当前值' : '', value: true },
+      { label: '关闭', description: current === false ? '当前值' : '', value: false },
+    ], { title: `配置“${target.name}”：${label}` });
+    if (selected === undefined || selected.value === current) return;
+    await this.updateCurrentTodoSetting(key, selected.value);
+  }
+
+  public async updateCurrentTodoSetting(
+    key: CatalogTodoSettingKey,
+    value: boolean | undefined,
+    showFeedback = true,
+  ): Promise<boolean> {
+    return this.updateCurrentTodoOverrides(key, value, showFeedback);
+  }
+
+  public async updateCurrentTodoTags(
+    tags: readonly string[] | undefined,
+    showFeedback = true,
+  ): Promise<boolean> {
+    return this.updateCurrentTodoOverrides('tags', tags, showFeedback);
+  }
+
   public async refresh(): Promise<void> {
     if (this.activeCatalog !== undefined) {
       await this.activateCatalog(this.activeCatalog.id, false);
@@ -748,6 +791,28 @@ export class ProjectCatalogServiceV2 implements vscode.Disposable, ProjectFeatur
     if (showFeedback) {
       await vscode.window.showInformationMessage(appliesNow ? '配置已保存并应用。' : '配置已保存；打开该集合的项目后应用。');
     }
+  }
+
+  private async updateCurrentTodoOverrides(
+    key: 'enabled' | 'tags' | 'markdownTasks',
+    value: boolean | readonly string[] | undefined,
+    showFeedback: boolean,
+  ): Promise<boolean> {
+    if (this.projectContext.kind !== 'member') return false;
+    const target = this.getStoredActiveCatalog();
+    if (target === undefined) return false;
+    const todo: { enabled?: boolean; tags?: readonly string[]; markdownTasks?: boolean } = { ...target.features.todo };
+    if (value === undefined) {
+      delete todo[key];
+    } else if (key === 'tags' && Array.isArray(value)) {
+      todo.tags = value;
+    } else if (key === 'enabled' && typeof value === 'boolean') {
+      todo.enabled = value;
+    } else if (key === 'markdownTasks' && typeof value === 'boolean') {
+      todo.markdownTasks = value;
+    }
+    await this.updateCatalogFeatures(target, { ...target.features, todo }, showFeedback);
+    return true;
   }
 
   private async configurePersonalValue<T extends string | boolean>(
