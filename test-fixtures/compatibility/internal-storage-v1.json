@@ -1,0 +1,9 @@
+{
+  "storageVersion": 1,
+  "catalogs": [{
+    "id": "storage-v1", "name": "内部存储 v1",
+    "features": { "tabs": { "autoOrganize": true }, "symbolOutline": { "mode": "enhanced" } },
+    "projects": [{ "id": "storage-v1-project", "alias": "应用", "uri": "file:///workspace/app", "type": "folder", "tags": [] }],
+    "createdAt": "2026-01-01T00:00:00.000Z", "updatedAt": "2026-01-01T00:00:00.000Z"
+  }]
+}

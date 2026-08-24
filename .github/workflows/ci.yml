@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - windows-latest
+          - ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Static checks
+        run: npm run check
+
+      - name: Unit tests
+        run: npm run test:unit
+
+  extension-host:
+    name: Extension Host (Windows)
+    needs: quality
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Cache VS Code test runtime
+        uses: actions/cache@v6
+        with:
+          path: .vscode-test/vscode-*
+          key: vscode-test-${{ runner.os }}-stable-v1
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Prepare package directory
+        run: node -e "require('node:fs').mkdirSync('releases', { recursive: true })"
+
+      - name: Build preview package
+        run: npm run package:vsix
+
+      - name: Resolve preview package path
+        shell: pwsh
+        run: |
+          $version = node -p "require('./package.json').version"
+          $packagePath = "releases/project-butler-$version-preview-test.vsix"
+          if (-not (Test-Path -LiteralPath $packagePath -PathType Leaf)) {
+            throw "Expected preview package was not created: $packagePath"
+          }
+          Add-Content -LiteralPath $env:GITHUB_ENV -Value "PROJECT_BUTLER_TEST_VSIX=$packagePath"
+
+      - name: Source Extension Host tests
+        run: npx vscode-test --label extensionHost
+
+      - name: Installed VSIX tests
+        run: npx vscode-test --config .vscode-test-installed-candidate.mjs --label installedCandidate

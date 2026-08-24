@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 2,
+  "name": "旧集合 v2",
+  "features": { "tabs": { "groupingMode": "auto" } },
+  "projects": [{ "alias": "多根工作区", "path": "../multi-root.code-workspace", "type": "workspace" }]
+}

@@ -1,0 +1,12 @@
+{
+  "format": "project-butler-export", "schemaVersion": 99, "exportedAt": "2026-08-01T00:00:00.000Z", "futureEnvelopeField": "ignored",
+  "collections": [{
+    "name": "未来导出格式", "futureCollectionField": { "command": "must-not-run" },
+    "features": {
+      "tabs": { "autoOrganize": false }, "symbolOutline": { "mode": "native" },
+      "todo": { "enabled": false, "tags": ["BUG"], "markdownTasks": false, "futureTodoField": "ignored" },
+      "futureFeature": "ignored"
+    },
+    "projects": []
+  }]
+}

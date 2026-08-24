@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 3,
+  "name": "当前集合 v3",
+  "features": { "tabs": { "autoOrganize": false }, "symbolOutline": { "mode": "enhanced" } },
+  "projects": [{ "alias": "工作区一", "path": "../workspace-one", "type": "folder", "description": "兼容测试项目", "tags": ["compatibility"] }]
+}

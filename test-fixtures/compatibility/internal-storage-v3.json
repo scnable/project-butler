@@ -1,0 +1,11 @@
+{
+  "storageVersion": 3,
+  "catalogs": [{
+    "id": "storage-v3", "name": "内部存储 v3",
+    "features": {
+      "tabs": { "autoOrganize": true }, "symbolOutline": { "mode": "native" },
+      "todo": { "enabled": true, "tags": ["TODO", "DEBUG"], "markdownTasks": false }
+    },
+    "projects": [], "createdAt": "2026-03-01T00:00:00.000Z", "updatedAt": "2026-03-01T00:00:00.000Z"
+  }]
+}

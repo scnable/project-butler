@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 1,
+  "name": "旧集合 v1",
+  "projects": [{ "alias": "工作区一", "path": "../workspace-one", "type": "auto" }]
+}

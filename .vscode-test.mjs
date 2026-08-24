@@ -16,6 +16,7 @@ export default defineConfig([
       'dist/integrationTest/externalFiles.test.js',
       'dist/integrationTest/outline.test.js',
       'dist/integrationTest/buildAndSafety.test.js',
+      'dist/integrationTest/compatibility.test.js',
       'dist/integrationTest/visuals.test.js',
       'dist/integrationTest/todo.test.js',
     ],

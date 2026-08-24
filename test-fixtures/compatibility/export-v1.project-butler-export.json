@@ -1,0 +1,7 @@
+{
+  "format": "project-butler-export", "schemaVersion": 1, "exportedAt": "2026-05-01T00:00:00.000Z",
+  "collections": [{
+    "name": "导出 v1",
+    "projects": [{ "alias": "工作区一", "path": "../workspace-one", "pathKind": "relative", "type": "folder" }]
+  }]
+}

@@ -1,0 +1,8 @@
+{
+  "storageVersion": 2,
+  "catalogs": [{
+    "id": "storage-v2", "name": "内部存储 v2",
+    "features": { "tabs": { "autoOrganize": false }, "symbolOutline": { "mode": "both" } },
+    "projects": [], "createdAt": "2026-02-01T00:00:00.000Z", "updatedAt": "2026-02-01T00:00:00.000Z"
+  }]
+}

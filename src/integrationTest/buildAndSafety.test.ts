@@ -28,7 +28,7 @@ suite('构建、错误隔离、安全与性能', () => {
   test('INT-157 VSIX 内容规则排除源码、测试、夹具和缓存', async () => {
     const api = await getApi();
     const ignore = new TextDecoder().decode(await vscode.workspace.fs.readFile(projectUri(api, '.vscodeignore')));
-    for (const rule of ['node_modules/**', '.local-tools/**', 'src/**', 'scripts/**', 'test-fixtures/**', 'dist/integrationTest/**', '**/*.test.js', '.vscode-test.*']) {
+    for (const rule of ['.github/**', 'node_modules/**', '.local-tools/**', 'src/**', 'scripts/**', 'test-fixtures/**', 'dist/integrationTest/**', '**/*.test.js', '.vscode-test.*']) {
       assert.match(ignore, new RegExp(escapeRegExp(rule)));
     }
     const packageText = new TextDecoder().decode(await vscode.workspace.fs.readFile(projectUri(api, 'package.json')));
@@ -119,6 +119,27 @@ suite('构建、错误隔离、安全与性能', () => {
     }
     assert.ok(Date.now() - started < 10_000);
     assert.ok(api.catalogs.service.configurationRevision >= 0);
+  });
+
+  test('INT-223 CI 对推送和拉取请求执行只读全量门禁', async () => {
+    const api = await getApi();
+    const workflow = new TextDecoder().decode(await vscode.workspace.fs.readFile(
+      projectUri(api, '.github/workflows/ci.yml'),
+    ));
+    assert.match(workflow, /push:/u);
+    assert.match(workflow, /pull_request:/u);
+    assert.match(workflow, /workflow_dispatch:/u);
+    assert.match(workflow, /contents:\s*read/u);
+    assert.doesNotMatch(workflow, /contents:\s*write/u);
+    for (const command of ['npm ci --ignore-scripts', 'npm run check', 'npm run test:unit', 'npm run package:vsix']) {
+      assert.match(workflow, new RegExp(escapeRegExp(command)));
+    }
+    assert.match(workflow, /--label extensionHost/u);
+    assert.match(workflow, /--label installedCandidate/u);
+    assert.match(workflow, /persist-credentials:\s*false/u);
+    assert.match(workflow, /require\('\.\/package\.json'\)\.version/u);
+    assert.match(workflow, /PROJECT_BUTLER_TEST_VSIX=\$packagePath/u);
+    assert.doesNotMatch(workflow, /project-butler-0\.10\.0-preview-test\.vsix/u);
   });
 });
 

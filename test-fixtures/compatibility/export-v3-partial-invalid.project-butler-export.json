@@ -1,0 +1,11 @@
+{
+  "format": "project-butler-export", "schemaVersion": 3, "exportedAt": "2026-07-01T00:00:00.000Z",
+  "collections": [{
+    "name": "导出局部无效字段",
+    "features": {
+      "tabs": { "autoOrganize": "invalid" }, "symbolOutline": { "mode": "enhanced" },
+      "todo": { "enabled": "invalid", "tags": ["FIXME"], "markdownTasks": true }
+    },
+    "projects": []
+  }]
+}

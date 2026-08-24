@@ -1,0 +1,12 @@
+{
+  "storageVersion": 3,
+  "futureRootField": "ignored",
+  "catalogs": [{
+    "id": "storage-v3-partial-invalid", "name": "局部无效字段", "futureCatalogField": true,
+    "features": {
+      "tabs": { "autoOrganize": true }, "symbolOutline": { "mode": "unsupported" },
+      "todo": { "enabled": "invalid", "tags": ["fixme", "DEBUG"], "markdownTasks": false, "futureTodoField": "ignored" }
+    },
+    "projects": [], "createdAt": "2026-04-01T00:00:00.000Z", "updatedAt": "2026-04-01T00:00:00.000Z"
+  }]
+}
