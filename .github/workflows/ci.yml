@@ -73,7 +73,8 @@ jobs:
         run: npm ci --ignore-scripts
 
       - name: Prepare package directory
-        run: node -e "require('node:fs').mkdirSync('releases', { recursive: true })"
+        run: |
+          node -e "require('node:fs').mkdirSync('releases', { recursive: true })"
 
       - name: Build preview package
         run: npm run package:vsix
