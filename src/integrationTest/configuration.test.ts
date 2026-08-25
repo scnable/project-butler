@@ -152,6 +152,34 @@ suite('配置侧栏、优先级与实时生效', () => {
     assert.equal(settings.sources.enabled, '全局个人设置');
   });
 
+  test('INT-224 项目已有标记设置默认关闭且位于代码 TODO 配置组', async () => {
+    const api = await getApi();
+    await applyPersonalSettingValue('todoProjectMarkers', false);
+    const todoGroup = api.catalogs.configurationProvider.getChildren()
+      .find((node) => node.kind === 'group' && node.id === 'todo');
+    assert.ok(todoGroup);
+    const settingNode = api.catalogs.configurationProvider.getChildren(todoGroup)
+      .find((node) => node.kind === 'personalSetting' && node.key === 'todoProjectMarkers');
+    assert.ok(settingNode);
+    assert.match(String(api.catalogs.configurationProvider.getTreeItem(settingNode).description), /关闭/);
+    assert.equal(getTodoSettings().showProjectMarkers, false);
+  });
+
+  test('INT-225 开启项目已有标记必须确认，取消时保持关闭', async () => {
+    const api = await getApi();
+    await applyPersonalSettingValue('todoProjectMarkers', false);
+    const cancelled = new ConfigurationTreeProvider(api.catalogs.service, api.context.globalState, interaction(true, false));
+    await cancelled.configurePersonalSetting('todoProjectMarkers');
+    cancelled.dispose();
+    assert.equal(getTodoSettings().showProjectMarkers, false);
+
+    const confirmed = new ConfigurationTreeProvider(api.catalogs.service, api.context.globalState, interaction(true, true));
+    await confirmed.configurePersonalSetting('todoProjectMarkers');
+    confirmed.dispose();
+    assert.equal(getTodoSettings().showProjectMarkers, true);
+    await applyPersonalSettingValue('todoProjectMarkers', false);
+  });
+
   test('INT-024 个人非项目标签自动移至末尾默认值写入用户作用域', async () => {
     const result = await applyPersonalSettingValue('tabDefault', true);
     assert.equal(result.globalValue, true);
@@ -349,6 +377,7 @@ suite('配置侧栏、优先级与实时生效', () => {
           return { label: '完全关闭', value: true };
         },
         async confirmDisableAi() { return true; },
+        async confirmProjectMarkers() { return true; },
         async showWarning(message) { warning = message; },
         async showInformation() {},
       },
@@ -388,6 +417,9 @@ function interaction(value: string | boolean | number | undefined, confirmation:
     async confirmDisableAi() {
       return confirmation;
     },
+    async confirmProjectMarkers() {
+      return confirmation;
+    },
     async showWarning() {},
     async showInformation() {},
   };
@@ -403,6 +435,7 @@ async function restorePersonalDefaults(): Promise<void> {
   await applyPersonalSettingValue('externalColor', true);
   await applyPersonalSettingValue('externalBadge', true);
   await applyPersonalSettingValue('externalStatus', true);
+  await applyPersonalSettingValue('todoProjectMarkers', false);
   await applyPersonalSettingValue('outlineScope', 'functionsAndTypes');
   await applyPersonalSettingValue('outlineHierarchy', 'tree');
   await applyPersonalSettingValue('outlineSort', 'source');

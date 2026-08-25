@@ -836,6 +836,12 @@
           "scope": "window",
           "description": "用于识别旧个人标记的历史标识。通过插件修改个人标识时会自动保留旧值。"
         },
+        "projectManager.todo.showProjectMarkers": {
+          "type": "boolean",
+          "default": false,
+          "scope": "window",
+          "description": "是否扫描并显示普通 TODO 和其他负责人的项目已有标记。默认关闭；大型或开源项目可能产生大量结果，并增加首次扫描耗时和 CPU 占用。"
+        },
         "projectManager.todo.markdownTasks": {
           "type": "boolean",
           "default": true,

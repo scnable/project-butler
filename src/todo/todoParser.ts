@@ -1,4 +1,5 @@
 import { TodoMatch, TodoParseOptions } from './todoTypes';
+import { isMyTodoOwner } from './todoOwner';
 
 export function parseTodoText(text: string, options: TodoParseOptions): TodoMatch[] {
   const activeTags = options.tags.filter((tag) => tag.enabled);
@@ -12,7 +13,7 @@ export function parseTodoText(text: string, options: TodoParseOptions): TodoMatc
 
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
     const line = lines[lineIndex] ?? '';
-    if (options.markdownTasks && tagLookup.has('TODO')) {
+    if (options.markdownTasks && options.includeProjectMarkers !== false && tagLookup.has('TODO')) {
       const markdown = /^\s*[-*+]\s+\[([ xX])\]\s*(.*)$/.exec(line);
       if (markdown !== null && markdown[1]?.toLocaleLowerCase() !== 'x') {
         const markerStart = line.indexOf('[');
@@ -30,7 +31,7 @@ export function parseTodoText(text: string, options: TodoParseOptions): TodoMatc
       const end = closeIndex < 0 ? line.length : closeIndex;
       bodies.push(stripBlockLinePrefix(line.slice(0, end), 0));
       if (closeIndex < 0) {
-        collectBodies(matches, bodies, lineIndex, markerPattern, tagLookup);
+        collectBodies(matches, bodies, lineIndex, markerPattern, tagLookup, options);
         continue;
       }
       activeBlock = undefined;
@@ -50,7 +51,7 @@ export function parseTodoText(text: string, options: TodoParseOptions): TodoMatc
         if (closeIndex < 0) activeBlock = { close: comment.close };
       }
     }
-    collectBodies(matches, bodies, lineIndex, markerPattern, tagLookup);
+    collectBodies(matches, bodies, lineIndex, markerPattern, tagLookup, options);
   }
   return matches;
 }
@@ -61,6 +62,7 @@ function collectBodies(
   line: number,
   markerPattern: RegExp,
   tags: ReadonlyMap<string, string>,
+  options: TodoParseOptions,
 ): void {
   for (const candidate of bodies) {
     const normalized = stripDecoration(candidate.body, candidate.offset);
@@ -69,12 +71,14 @@ function collectBodies(
     const rawTag = result[1];
     const canonical = tags.get(rawTag.toLocaleUpperCase());
     if (canonical === undefined) continue;
+    const owner = result[2]?.trim();
+    if (options.includeProjectMarkers === false && !isMyTodoOwner(owner, options.ownerIdentities ?? [])) continue;
     const completed = result[3]?.toLocaleLowerCase() === 'x';
     if (completed) continue;
     target.push({
       tag: canonical,
       rawTag,
-      ...(result[2] === undefined ? {} : { owner: result[2].trim() }),
+      ...(owner === undefined ? {} : { owner }),
       text: result[4]?.trim() ?? '',
       line,
       startCharacter: normalized.offset,

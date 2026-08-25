@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { TodoSearchQuery } from './todoScanPlan';
 
 export type TodoScanBackend = 'currentFile' | 'git' | 'ripgrep' | 'vscode' | 'mixed';
 
@@ -10,7 +11,7 @@ export interface TodoCandidateSearchResult {
 export interface TodoCandidateSearch {
   search(
     folder: vscode.WorkspaceFolder,
-    terms: readonly string[],
+    query: TodoSearchQuery,
     excludePatterns: readonly string[],
     token: vscode.CancellationToken,
   ): Promise<TodoCandidateSearchResult | undefined>;

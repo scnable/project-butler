@@ -18,6 +18,7 @@ suite('代码 TODO 聚合、导航与快速标记', () => {
     await setGlobalSetting('projectManager.todo', 'highlight', true);
     await setGlobalSetting('projectManager.todo', 'owner', 'scnable-test');
     await setGlobalSetting('projectManager.todo', 'ownerAliases', []);
+    await setGlobalSetting('projectManager.todo', 'showProjectMarkers', true);
   });
 
   teardown(async () => {
@@ -29,6 +30,7 @@ suite('代码 TODO 聚合、导航与快速标记', () => {
     await setGlobalSetting('projectManager.todo', 'highlight', undefined);
     await setGlobalSetting('projectManager.todo', 'owner', undefined);
     await setGlobalSetting('projectManager.todo', 'ownerAliases', undefined);
+    await setGlobalSetting('projectManager.todo', 'showProjectMarkers', undefined);
   });
 
   test('INT-196 注册 TODO 视图、命令和配置分组', async () => {
@@ -45,6 +47,7 @@ suite('代码 TODO 聚合、导航与快速标记', () => {
       visibility: 'collapsed',
     }]);
     assert.equal(todoInPluginContainer.length, 0);
+    assert.equal(extension.packageJSON.contributes?.configuration?.properties?.['projectManager.todo.showProjectMarkers']?.default, false);
     const commands = await vscode.commands.getCommands(true);
     for (const command of [
       'projectManager.todo.refresh', 'projectManager.todo.quickMark',
@@ -238,8 +241,9 @@ suite('代码 TODO 聚合、导航与快速标记', () => {
     }
   });
 
-  test('INT-210 个人标记优先分组且其他源码标记保持可见', async () => {
+  test('INT-210 默认个人模式隐藏项目已有标记，开启后才恢复显示', async () => {
     const api = await getApi();
+    await setGlobalSetting('projectManager.todo', 'showProjectMarkers', false);
     const document = await vscode.workspace.openTextDocument({
       language: 'typescript',
       content: '// TODO(scnable-test): mine\n// FIXME: shared\n',
@@ -250,12 +254,40 @@ suite('代码 TODO 聚合、导航与快速标记', () => {
     api.todo.provider.filter = '';
     await api.todo.refresh();
     const roots = api.todo.provider.getChildren();
-    assert.deepEqual(roots.map((node) => node.kind === 'ownerGroup' ? node.ownership : node.kind), ['mine', 'other']);
+    assert.deepEqual(roots.map((node) => node.kind === 'ownerGroup' ? node.ownership : node.kind), ['mine']);
     const nodes = flattenTodoNodes(api.todo.provider);
     const results = nodes.filter((node) => node.kind === 'result');
-    assert.equal(results.length, 2);
+    assert.equal(results.length, 1);
     assert.ok(results.some((node) => node.kind === 'result' && node.match.owner === 'scnable-test'));
-    assert.ok(results.some((node) => node.kind === 'result' && node.match.owner === undefined));
+    assert.ok(!results.some((node) => node.kind === 'result' && node.match.owner === undefined));
+
+    await setGlobalSetting('projectManager.todo', 'showProjectMarkers', true);
+    await api.todo.refresh();
+    const expanded = flattenTodoNodes(api.todo.provider).filter((node) => node.kind === 'result');
+    assert.equal(expanded.length, 2);
+    assert.ok(expanded.some((node) => node.kind === 'result' && node.match.owner === undefined));
+  });
+
+  test('INT-226 未设置个人标识且项目标记关闭时不启动候选文件搜索', async () => {
+    const api = await getApi();
+    await setGlobalSetting('projectManager.todo', 'owner', '');
+    await setGlobalSetting('projectManager.todo', 'showProjectMarkers', false);
+    let searches = 0;
+    const scanner = new TodoScanner(new TodoIndex(), api.output, {
+      async search() {
+        searches += 1;
+        return undefined;
+      },
+    });
+    const source = new vscode.CancellationTokenSource();
+    try {
+      const summary = await scanner.scanWorkspace(source.token);
+      assert.equal(searches, 0);
+      assert.equal(summary.candidateFiles, 0);
+      assert.equal(summary.results, 0);
+    } finally {
+      source.dispose();
+    }
   });
 
   test('INT-211 目录链压缩且已有标记可以认领和取消归属', async () => {
@@ -367,7 +399,9 @@ suite('代码 TODO 聚合、导航与快速标记', () => {
       name: 'remote-workspace',
       index: 0,
     };
-    assert.equal(await new LocalTodoCandidateSearch().search(remoteFolder, ['TODO'], [], cancellation.token), undefined);
+    assert.equal(await new LocalTodoCandidateSearch().search(
+      remoteFolder, { mode: 'fixed', patterns: ['TODO'] }, [], cancellation.token,
+    ), undefined);
     cancellation.dispose();
     const scheme = 'todo-remote-test';
     const content = new TextEncoder().encode('// TODO: remote source\n');

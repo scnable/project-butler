@@ -33,6 +33,8 @@ export interface TodoParseOptions {
   readonly markdownTasks: boolean;
   readonly lineCommentTokens: readonly string[];
   readonly blockCommentTokens: readonly { readonly open: string; readonly close: string }[];
+  readonly ownerIdentities?: readonly string[];
+  readonly includeProjectMarkers?: boolean;
 }
 
 export type TodoScope = 'workspace' | 'currentFile';

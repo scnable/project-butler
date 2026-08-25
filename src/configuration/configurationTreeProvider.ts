@@ -35,6 +35,7 @@ interface Choice {
 export interface ConfigurationInteraction {
   choose(definition: PersonalSettingDefinition, current: unknown): Promise<Choice | undefined>;
   confirmDisableAi(): Promise<boolean>;
+  confirmProjectMarkers(): Promise<boolean>;
   showWarning(message: string): Promise<void>;
   showInformation(message: string): Promise<void>;
 }
@@ -74,6 +75,7 @@ const PERSONAL_SETTINGS = {
   todoEnabled: setting('代码 TODO', 'projectManager.todo', 'enabled', booleanChoices(), undefined, '关闭后停止扫描并清空当前聚合结果；重新开启后在 TODO 视图可见时立即扫描。'),
   todoMarkdownTasks: setting('Markdown 未完成项', 'projectManager.todo', 'markdownTasks', booleanChoices()),
   todoHighlight: setting('编辑器标记高亮', 'projectManager.todo', 'highlight', booleanChoices(), undefined, '只突出当前可见编辑器中的关键词，不高亮整行。'),
+  todoProjectMarkers: setting('显示项目已有标记', 'projectManager.todo', 'showProjectMarkers', booleanChoices(), undefined, '默认关闭。开启后会扫描普通 TODO 和其他负责人的标记；大型或开源项目可能增加首次扫描耗时、CPU 占用和结果数量。'),
   outlineScope: setting('符号范围', 'projectManager.symbolOutline', 'scope', [
     { label: '仅函数', value: 'functions' }, { label: '函数与类型', value: 'functionsAndTypes' }, { label: '全部符号', value: 'all' },
   ]),
@@ -108,6 +110,7 @@ const GROUP_CHILDREN: Record<GroupId, readonly ConfigurationTreeNode[]> = {
   todo: [
     { kind: 'collectionSetting', key: 'todoEnabled' },
     { kind: 'todoAction', key: 'owner' },
+    { kind: 'personalSetting', key: 'todoProjectMarkers' },
     { kind: 'collectionSetting', key: 'todoMarkdownTasks' },
     { kind: 'personalSetting', key: 'todoHighlight' },
     { kind: 'todoAction', key: 'tags' },
@@ -199,6 +202,9 @@ export class ConfigurationTreeProvider implements vscode.TreeDataProvider<Config
     if (selected === undefined || selected.value === current) return;
     if (key === 'disableAiFeatures' && selected.value === true) {
       if (!(await this.interaction.confirmDisableAi())) return;
+    }
+    if (key === 'todoProjectMarkers' && selected.value === true) {
+      if (!(await this.interaction.confirmProjectMarkers())) return;
     }
     const result = await applyPersonalSettingValue(key, selected.value);
     if (key === 'disableAiFeatures') {
@@ -402,6 +408,17 @@ const vscodeConfigurationInteraction: ConfigurationInteraction = {
       '完全关闭',
     );
     return confirmed === '完全关闭';
+  },
+  async confirmProjectMarkers() {
+    const confirmed = await vscode.window.showWarningMessage(
+      '确认扫描并显示项目已有标记吗？',
+      {
+        modal: true,
+        detail: '这会检索普通 TODO 和其他负责人的标记。大型或开源项目可能产生大量结果，并增加首次扫描耗时、CPU 占用和内存使用；个人标记仍会优先搜索和展示。可以稍后从同一位置关闭。',
+      },
+      '开启并扫描',
+    );
+    return confirmed === '开启并扫描';
   },
   async showWarning(message) {
     await vscode.window.showWarningMessage(message);

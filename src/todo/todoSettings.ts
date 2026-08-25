@@ -10,6 +10,7 @@ export interface TodoSettings {
   readonly tagNames: readonly string[];
   readonly markdownTasks: boolean;
   readonly highlight: boolean;
+  readonly showProjectMarkers: boolean;
   readonly owner?: string;
   readonly ownerAliases: readonly string[];
   readonly ownerIdentities: readonly string[];
@@ -56,6 +57,7 @@ export function getTodoSettings(catalogSettings = featureSource?.currentProjectT
     tagNames,
     markdownTasks: markdownTasks.value,
     highlight: configuration.get<boolean>('highlight', true),
+    showProjectMarkers: configuration.get<boolean>('showProjectMarkers', false),
     ...(owner === undefined ? {} : { owner }),
     ownerAliases,
     ownerIdentities: normalizeTodoOwners(owner, ownerAliases),
@@ -89,7 +91,14 @@ function isTagList(value: unknown): value is readonly string[] {
 
 export function createTodoParseOptions(languageId: string | undefined, settings = getTodoSettings()): TodoParseOptions | undefined {
   if (languageId === 'markdown') {
-    return { tags: settings.tags, markdownTasks: settings.markdownTasks, lineCommentTokens: [], blockCommentTokens: [] };
+    return {
+      tags: settings.tags,
+      markdownTasks: settings.markdownTasks,
+      lineCommentTokens: [],
+      blockCommentTokens: [],
+      ownerIdentities: settings.ownerIdentities,
+      includeProjectMarkers: settings.showProjectMarkers,
+    };
   }
   const syntax = languageId === undefined ? undefined : getTodoCommentSyntax(languageId);
   return syntax === undefined ? undefined : {
@@ -97,6 +106,8 @@ export function createTodoParseOptions(languageId: string | undefined, settings 
     markdownTasks: false,
     lineCommentTokens: syntax.lineTokens,
     blockCommentTokens: syntax.blockTokens,
+    ownerIdentities: settings.ownerIdentities,
+    includeProjectMarkers: settings.showProjectMarkers,
   };
 }
 

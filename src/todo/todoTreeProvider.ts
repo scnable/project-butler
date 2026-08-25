@@ -72,12 +72,12 @@ export class TodoTreeProvider implements vscode.TreeDataProvider<TodoTreeNode>, 
     if (settings.owner === undefined) {
       return [
         { kind: 'ownerGroup', ownership: 'mine', configured: false },
-        ...(other === 0 ? [] : [{ kind: 'ownerGroup' as const, ownership: 'other' as const, configured: false }]),
+        ...(!settings.showProjectMarkers || other === 0 ? [] : [{ kind: 'ownerGroup' as const, ownership: 'other' as const, configured: false }]),
       ];
     }
     return [
       { kind: 'ownerGroup', ownership: 'mine', configured: true },
-      ...(other === 0 ? [] : [{ kind: 'ownerGroup' as const, ownership: 'other' as const, configured: true }]),
+      ...(!settings.showProjectMarkers || other === 0 ? [] : [{ kind: 'ownerGroup' as const, ownership: 'other' as const, configured: true }]),
     ];
   }
 
@@ -86,7 +86,7 @@ export class TodoTreeProvider implements vscode.TreeDataProvider<TodoTreeNode>, 
       const isMine = node.ownership === 'mine';
       const count = this.countMatches(this.filteredResources(), { ownership: node.ownership });
       const item = new vscode.TreeItem(
-        isMine ? '我的标记' : '项目其他标记',
+        isMine ? '我的标记' : '项目已有标记',
         !node.configured && isMine
           ? vscode.TreeItemCollapsibleState.None
           : isMine

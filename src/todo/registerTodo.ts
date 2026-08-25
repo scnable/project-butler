@@ -49,14 +49,20 @@ export function registerTodo(
     const settings = getTodoSettings();
     const filterActive = provider.filter.trim().length > 0;
     const scopeLabel = provider.scope === 'workspace' ? '工作区' : '当前文件';
-    view.description = `${scopeLabel} · ${provider.grouping === 'file' ? '按文件' : '按标签'}${filterActive ? ' · 已筛选' : ''}`;
+    const markerScope = settings.showProjectMarkers ? '个人与项目标记' : '仅个人标记';
+    view.description = `${scopeLabel} · ${markerScope} · ${provider.grouping === 'file' ? '按文件' : '按标签'}${filterActive ? ' · 已筛选' : ''}`;
     if (!settings.enabled) {
       view.message = '代码 TODO 已关闭。可从“配置”视图重新开启。';
+    } else if (!settings.showProjectMarkers && settings.owner === undefined) {
+      view.message = '尚未设置个人标记标识。设置后只扫描属于你的标记；项目已有标记默认不会扫描。';
     } else if (cancellation !== undefined) {
       if (effectiveSummary?.phase === 'openFiles') {
         view.message = `已先扫描 ${effectiveSummary.files} 个打开文件并找到 ${effectiveSummary.results} 条，正在准备工作区快速搜索；可以从标题栏取消。`;
       } else if (effectiveSummary?.phase === 'scanning') {
-        view.message = `正在使用${todoScanBackendLabel(effectiveSummary.backend)}处理 ${effectiveSummary.files + effectiveSummary.skippedFiles}/${effectiveSummary.candidateFiles} 个候选源码（从 ${effectiveSummary.discoveredFiles} 个源码中筛选），已找到 ${effectiveSummary.results} 条；可以从标题栏取消。`;
+        const sourceCount = effectiveSummary.backend === 'vscode'
+          ? `（从 ${effectiveSummary.discoveredFiles} 个受支持源码中筛选）`
+          : '';
+        view.message = `正在使用${todoScanBackendLabel(effectiveSummary.backend)}处理 ${effectiveSummary.files + effectiveSummary.skippedFiles}/${effectiveSummary.candidateFiles} 个候选源码${sourceCount}，已找到 ${effectiveSummary.results} 条；可以从标题栏取消。`;
       } else {
         view.message = '正在枚举源码并选择最快的可用搜索后端，可以从标题栏取消。';
       }
@@ -72,10 +78,13 @@ export function registerTodo(
     } else if (filterActive && provider.visibleResultCount === 0 && provider.totalResultCount > 0) {
       view.message = `筛选“${provider.filter.trim()}”没有匹配结果；可使用标题栏的“清除 TODO 筛选”恢复全部 ${provider.totalResultCount} 条标记。`;
     } else if (hasCompletedScan && provider.totalResultCount === 0) {
-      view.message = `没有找到标记。范围：${scopeLabel}；当前关键词：${settings.tagNames.join('、')}。可从标题栏管理关键词。`;
+      view.message = `没有找到${settings.showProjectMarkers ? '' : '个人'}标记。范围：${scopeLabel}；当前关键词：${settings.tagNames.join('、')}。可从“配置 → 代码 TODO”调整扫描范围。`;
     } else if (effectiveSummary?.phase === 'complete') {
       const skipped = effectiveSummary.skippedFiles > 0 ? `，跳过 ${effectiveSummary.skippedFiles} 个不可读文件` : '';
-      view.message = `扫描完成（${todoScanBackendLabel(effectiveSummary.backend)}）：从 ${effectiveSummary.discoveredFiles} 个源码中筛选并处理 ${effectiveSummary.candidateFiles} 个候选，找到 ${effectiveSummary.results} 条${skipped}。`;
+      const sourceCount = effectiveSummary.backend === 'vscode'
+        ? `从 ${effectiveSummary.discoveredFiles} 个受支持源码中筛选并`
+        : '';
+      view.message = `扫描完成（${todoScanBackendLabel(effectiveSummary.backend)}）：${sourceCount}处理 ${effectiveSummary.candidateFiles} 个候选，找到 ${effectiveSummary.results} 条${skipped}。`;
     } else if (!hasCompletedScan) {
       view.message = '尚未扫描。展开此视图后会自动扫描，也可以从标题栏手动刷新。';
     } else {

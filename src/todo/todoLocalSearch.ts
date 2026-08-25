@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 import * as vscode from 'vscode';
 import { TODO_SEARCH_GLOBS } from './todoCommentSyntax';
-import { parseTodoCandidatePathOutput } from './todoScanPlan';
+import { parseTodoCandidatePathOutput, TodoSearchQuery } from './todoScanPlan';
 import { TodoCandidateSearch, TodoCandidateSearchResult } from './todoSearchBackend';
 
 const MAX_PATH_OUTPUT_BYTES = 16 * 1024 * 1024;
@@ -14,28 +14,32 @@ interface ProcessResult {
 export class LocalTodoCandidateSearch implements TodoCandidateSearch {
   public async search(
     folder: vscode.WorkspaceFolder,
-    terms: readonly string[],
+    query: TodoSearchQuery,
     excludePatterns: readonly string[],
     token: vscode.CancellationToken,
   ): Promise<TodoCandidateSearchResult | undefined> {
-    if (folder.uri.scheme !== 'file' || terms.length === 0 || token.isCancellationRequested) return undefined;
-    const git = await this.tryGit(folder.uri.fsPath, terms, token);
+    if (folder.uri.scheme !== 'file' || query.patterns.length === 0 || token.isCancellationRequested) return undefined;
+    const git = await this.tryGit(folder.uri.fsPath, query, excludePatterns, token);
     if (git !== undefined || token.isCancellationRequested) return git;
-    return this.tryRipgrep(folder.uri.fsPath, terms, excludePatterns, token);
+    return this.tryRipgrep(folder.uri.fsPath, query, excludePatterns, token);
   }
 
-  private async tryGit(cwd: string, terms: readonly string[], token: vscode.CancellationToken): Promise<TodoCandidateSearchResult | undefined> {
-    const grepArgs = ['grep', '-l', '-z', '-I', '-i', '-F'];
-    for (const term of terms) grepArgs.push('-e', term);
+  private async tryGit(
+    cwd: string,
+    query: TodoSearchQuery,
+    excludePatterns: readonly string[],
+    token: vscode.CancellationToken,
+  ): Promise<TodoCandidateSearchResult | undefined> {
+    const grepArgs = ['grep', '--untracked', '-l', '-z', '-I', '-i', query.mode === 'fixed' ? '-F' : '-E'];
+    for (const pattern of query.patterns) grepArgs.push('-e', pattern);
     grepArgs.push('--', '.');
+    for (const pattern of excludePatterns) grepArgs.push(`:(exclude,glob)${pattern}`);
     try {
       const grep = await runProcess('git', grepArgs, cwd, token);
       if (grep.code !== 0 && grep.code !== 1) return undefined;
-      const untracked = await runProcess('git', ['ls-files', '-z', '--others', '--exclude-standard', '--', '.'], cwd, token);
-      if (untracked.code !== 0) return undefined;
       return {
         backend: 'git',
-        relativePaths: parseTodoCandidatePathOutput(Buffer.concat([grep.stdout, untracked.stdout])),
+        relativePaths: parseTodoCandidatePathOutput(grep.stdout),
       };
     } catch {
       return undefined;
@@ -44,12 +48,13 @@ export class LocalTodoCandidateSearch implements TodoCandidateSearch {
 
   private async tryRipgrep(
     cwd: string,
-    terms: readonly string[],
+    query: TodoSearchQuery,
     excludePatterns: readonly string[],
     token: vscode.CancellationToken,
   ): Promise<TodoCandidateSearchResult | undefined> {
-    const args = ['--files-with-matches', '--null', '--ignore-case', '--fixed-strings', '--hidden', '--no-ignore', '--no-messages'];
-    for (const term of terms) args.push('--regexp', term);
+    const args = ['--files-with-matches', '--null', '--ignore-case', '--hidden', '--no-ignore', '--no-messages'];
+    if (query.mode === 'fixed') args.push('--fixed-strings');
+    for (const pattern of query.patterns) args.push('--regexp', pattern);
     for (const glob of TODO_SEARCH_GLOBS) args.push('--glob', glob);
     for (const pattern of excludePatterns) args.push('--glob', `!${pattern}`);
     args.push('.');

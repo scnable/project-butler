@@ -11,6 +11,11 @@ export const DEFAULT_TODO_EXCLUDE_PATTERNS = [
   '**/.vscode-test/**',
 ] as const;
 
+export interface TodoSearchQuery {
+  readonly mode: 'fixed' | 'regex';
+  readonly patterns: readonly string[];
+}
+
 export function collectTodoExcludePatterns(...configurations: readonly unknown[]): string[] {
   const patterns = new Set<string>(DEFAULT_TODO_EXCLUDE_PATTERNS);
   for (const configuration of configurations) {
@@ -32,10 +37,24 @@ export function createTodoExcludeGlob(...configurations: readonly unknown[]): st
   return `{${patterns.join(',')}}`;
 }
 
-export function createTodoSearchTerms(tagNames: readonly string[], markdownTasks: boolean): string[] {
-  const terms = new Set(tagNames.map((tag) => tag.trim()).filter((tag) => tag.length > 0));
-  if (markdownTasks) terms.add('[ ]');
-  return [...terms];
+export function createTodoSearchQuery(
+  tagNames: readonly string[],
+  markdownTasks: boolean,
+  ownerIdentities: readonly string[] = [],
+  includeProjectMarkers = true,
+): TodoSearchQuery {
+  const tags = [...new Set(tagNames.map((tag) => tag.trim()).filter((tag) => tag.length > 0))];
+  if (includeProjectMarkers) {
+    const patterns = new Set(tags);
+    if (markdownTasks) patterns.add('[ ]');
+    return { mode: 'fixed', patterns: [...patterns] };
+  }
+  const owners = [...new Set(ownerIdentities.map((owner) => owner.trim()).filter((owner) => owner.length > 0))];
+  if (tags.length === 0 || owners.length === 0) return { mode: 'regex', patterns: [] };
+  return {
+    mode: 'regex',
+    patterns: [`(${tags.map(escapeExtendedRegExp).join('|')})[[:space:]]*\\([[:space:]]*(${owners.map(escapeExtendedRegExp).join('|')})[[:space:]]*\\)`],
+  };
 }
 
 export function normalizeTodoCandidatePath(path: string): string | undefined {
@@ -56,6 +75,10 @@ export function parseTodoCandidatePathOutput(output: Buffer): string[] {
 
 function normalizePattern(pattern: string): string {
   return pattern.trim().replaceAll('\\', '/').replace(/^\.\/+/, '').replace(/\/+$/, '');
+}
+
+function escapeExtendedRegExp(value: string): string {
+  return value.replace(/[.\\+*?^[\]$(){}|]/g, '\\$&');
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

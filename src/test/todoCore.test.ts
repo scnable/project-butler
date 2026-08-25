@@ -6,7 +6,7 @@ import { findMarker } from '../todo/todoMarkerModel';
 import { isMyTodoOwner, normalizeTodoOwner, normalizeTodoOwners } from '../todo/todoOwner';
 import { parseTodoText } from '../todo/todoParser';
 import {
-  collectTodoExcludePatterns, createTodoExcludeGlob, createTodoSearchTerms,
+  collectTodoExcludePatterns, createTodoExcludeGlob, createTodoSearchQuery,
   DEFAULT_TODO_EXCLUDE_PATTERNS, normalizeTodoCandidatePath, parseTodoCandidatePathOutput,
 } from '../todo/todoScanPlan';
 import { combineTodoScanBackends, todoScanBackendLabel } from '../todo/todoSearchBackend';
@@ -90,6 +90,22 @@ describe('代码 TODO 注释解析', () => {
     });
     assert.deepEqual(results.map((result) => [result.tag, result.owner, result.text]), [
       ['TODO', 'scnable', 'mine'], ['FIXME', undefined, 'shared'],
+    ]);
+  });
+
+  it('个人模式只保留当前标识和历史别名并排除 Markdown 项目任务', () => {
+    const results = parseTodoText([
+      '// TODO(scnable): current',
+      '// FIXME(old-name): historical',
+      '// BUG(other): foreign',
+      '// TODO: unassigned',
+      '- [ ] markdown task',
+    ].join('\n'), {
+      tags, markdownTasks: true, lineCommentTokens: cSyntax.lineTokens, blockCommentTokens: cSyntax.blockTokens,
+      ownerIdentities: ['scnable', 'OLD-NAME'], includeProjectMarkers: false,
+    });
+    assert.deepEqual(results.map((result) => [result.tag, result.owner, result.text]), [
+      ['TODO', 'scnable', 'current'], ['FIXME', 'old-name', 'historical'],
     ]);
   });
 
@@ -228,8 +244,15 @@ describe('代码 TODO 扫描计划', () => {
     assert.match(glob, /examples\/\*\*/);
   });
 
-  it('生成固定字符串搜索词并规范化候选相对路径', () => {
-    assert.deepEqual(createTodoSearchTerms(['TODO', 'DEBUG'], true), ['TODO', 'DEBUG', '[ ]']);
+  it('分别生成项目固定字符串查询和个人负责人正则查询', () => {
+    assert.deepEqual(createTodoSearchQuery(['TODO', 'DEBUG'], true), {
+      mode: 'fixed', patterns: ['TODO', 'DEBUG', '[ ]'],
+    });
+    assert.deepEqual(createTodoSearchQuery(['TODO', 'DEBUG'], true, ['scnable', 'old.name'], false), {
+      mode: 'regex',
+      patterns: ['(TODO|DEBUG)[[:space:]]*\\([[:space:]]*(scnable|old\\.name)[[:space:]]*\\)'],
+    });
+    assert.deepEqual(createTodoSearchQuery(['TODO'], true, [], false), { mode: 'regex', patterns: [] });
     assert.equal(normalizeTodoCandidatePath('.\\src\\main.c'), 'src/main.c');
     assert.equal(normalizeTodoCandidatePath('../outside.c'), undefined);
     assert.equal(normalizeTodoCandidatePath('C:\\outside.c'), undefined);
