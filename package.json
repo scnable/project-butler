@@ -2,7 +2,7 @@
   "name": "catlas-hub",
   "displayName": "CAtlas Hub",
   "description": "增强 VS Code 的项目切换、代码浏览、标签组织和便携开发设置。",
-  "version": "0.11.0",
+  "version": "1.0.0",
   "publisher": "scnable",
   "license": "MIT",
   "icon": "media/catlas-hub.png",
