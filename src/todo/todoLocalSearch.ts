@@ -1,3 +1,8 @@
+/**
+ * 通过本地 Git / ripgrep 搜索可能含标记的文件，再交给扫描器读取并精确解析。
+ * 成功但没有匹配与后端不可用是两种结果，不能混为一谈，否则会无谓触发更慢的兜底搜索。
+ * 历史内存问题要求取消时释放输出监听和缓存、终止子进程，并限制输出大小；不要累积多轮搜索输出。
+ */
 import { spawn } from 'node:child_process';
 import * as vscode from 'vscode';
 import { TODO_SEARCH_GLOBS } from './todoCommentSyntax';
@@ -81,31 +86,46 @@ async function runProcess(
     let totalBytes = 0;
     let settled = false;
     let cancellation: vscode.Disposable | undefined;
-    const finishReject = (error: Error): void => {
+    const cleanup = (): void => {
+      cancellation?.dispose();
+      child.stdout.off('data', onData);
+      child.off('error', onError);
+      child.off('close', onClose);
+    };
+    const finishReject = (error: Error, terminate = false): void => {
       if (settled) return;
       settled = true;
-      cancellation?.dispose();
+      cleanup();
+      chunks.length = 0;
+      if (terminate) {
+        child.stdout.destroy();
+        child.kill();
+      }
       reject(error);
     };
-    cancellation = token.onCancellationRequested(() => {
-      child.kill();
-      finishReject(new vscode.CancellationError());
-    });
-    child.stdout.on('data', (chunk: Buffer) => {
+    const onData = (chunk: Buffer): void => {
+      if (settled) return;
       totalBytes += chunk.length;
       if (totalBytes > MAX_PATH_OUTPUT_BYTES) {
-        child.kill();
-        finishReject(new Error('候选路径输出超过安全上限'));
+        finishReject(new Error('候选路径输出超过安全上限'), true);
         return;
       }
       chunks.push(chunk);
-    });
-    child.once('error', finishReject);
-    child.once('close', (code) => {
+    };
+    const onError = (error: Error): void => finishReject(error);
+    const onClose = (code: number | null): void => {
       if (settled) return;
       settled = true;
-      cancellation?.dispose();
-      resolve({ code, stdout: Buffer.concat(chunks) });
+      cleanup();
+      const stdout = Buffer.concat(chunks);
+      chunks.length = 0;
+      resolve({ code, stdout });
+    };
+    cancellation = token.onCancellationRequested(() => {
+      finishReject(new vscode.CancellationError(), true);
     });
+    child.stdout.on('data', onData);
+    child.once('error', onError);
+    child.once('close', onClose);
   });
 }

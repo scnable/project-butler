@@ -1,10 +1,15 @@
 {
-  "name": "project-butler",
-  "displayName": "项目管家",
+  "name": "catlas-hub",
+  "displayName": "CAtlas Hub",
   "description": "增强 VS Code 的项目切换、代码浏览、标签组织和便携开发设置。",
-  "version": "0.10.0",
-  "publisher": "local-development",
-  "license": "UNLICENSED",
+  "version": "0.11.0",
+  "publisher": "scnable",
+  "license": "MIT",
+  "icon": "media/catlas-hub.png",
+  "homepage": "https://github.com/scnable/project-butler#readme",
+  "bugs": {
+    "url": "https://github.com/scnable/project-butler/issues"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/scnable/project-butler.git"
@@ -58,7 +63,7 @@
       "activitybar": [
         {
           "id": "projectManager",
-          "title": "项目管家",
+          "title": "CAtlas Hub",
           "icon": "media/icons/baseline/product.svg"
         }
       ]
@@ -68,12 +73,12 @@
         {
           "id": "projectManager.projectsView",
           "name": "项目集合",
-          "contextualTitle": "项目管家"
+          "contextualTitle": "CAtlas Hub"
         },
         {
           "id": "projectManager.configurationView",
           "name": "配置",
-          "contextualTitle": "项目管家",
+          "contextualTitle": "CAtlas Hub",
           "visibility": "visible"
         },
         {
@@ -123,348 +128,363 @@
     ],
     "commands": [
       {
+        "command": "projectManager.exportIdentityMigration",
+        "title": "CAtlas Hub: 导出到正式版迁移文件"
+      },
+      {
+        "command": "projectManager.importIdentityMigration",
+        "title": "CAtlas Hub: 导入旧身份迁移文件"
+      },
+      {
         "command": "projectManager.organizeCurrentTabGroup",
-        "title": "项目管家: 将非项目标签移到末尾",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 将非项目标签移到末尾",
+        "category": "CAtlas Hub",
         "icon": "$(arrow-right)"
       },
       {
         "command": "projectManager.focusOpenedFile",
         "title": "聚焦已打开文件",
-        "category": "项目管家"
+        "category": "CAtlas Hub"
       },
       {
         "command": "projectManager.collapseOpenedFilesNode",
         "title": "折叠此目录",
-        "category": "项目管家",
+        "category": "CAtlas Hub",
         "icon": "$(fold)"
       },
       {
         "command": "projectManager.expandOpenedFilesNode",
         "title": "展开此目录",
-        "category": "项目管家",
+        "category": "CAtlas Hub",
         "icon": "$(unfold)"
       },
       {
         "command": "projectManager.collapseAllOpenedFiles",
         "title": "折叠全部目录",
-        "category": "项目管家",
+        "category": "CAtlas Hub",
         "icon": "$(collapse-all)"
       },
       {
         "command": "projectManager.expandAllOpenedFiles",
         "title": "展开全部目录",
-        "category": "项目管家",
+        "category": "CAtlas Hub",
         "icon": "$(expand-all)"
       },
       {
         "command": "projectManager.hideNativeOpenEditors",
         "title": "隐藏原生打开的编辑器",
-        "category": "项目管家"
+        "category": "CAtlas Hub"
       },
       {
         "command": "projectManager.restoreNativeOpenEditors",
         "title": "恢复原生打开的编辑器",
-        "category": "项目管家"
+        "category": "CAtlas Hub"
       },
       {
         "command": "projectManager.excludeResources",
-        "title": "项目管家: 屏蔽所选资源（目录、搜索与监控）",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 屏蔽所选资源（目录、搜索与监控）",
+        "category": "CAtlas Hub",
         "icon": "$(eye-closed)"
       },
       {
         "command": "projectManager.excludeSameFileType",
-        "title": "项目管家: 屏蔽同类型文件（按扩展名）",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 屏蔽同类型文件（按扩展名）",
+        "category": "CAtlas Hub",
         "icon": "$(file-binary)"
       },
       {
         "command": "projectManager.showExternalFiles",
-        "title": "项目管家: 查看工作区外文件",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 查看工作区外文件",
+        "category": "CAtlas Hub",
         "icon": "$(warning)"
       },
       {
         "command": "projectManager.manageExclusions",
-        "title": "项目管家: 管理/取消屏蔽",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 管理/取消屏蔽",
+        "category": "CAtlas Hub",
         "icon": "$(filter)"
       },
       {
         "command": "projectManager.diagnoseActiveFile",
-        "title": "项目管家: 诊断当前文件归属",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 诊断当前文件归属",
+        "category": "CAtlas Hub",
         "icon": "$(warning)"
       },
       {
         "command": "projectManager.addProjectToCatalog",
-        "title": "项目管家: 添加项目到集合",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 添加项目到集合",
+        "category": "CAtlas Hub",
         "icon": "$(add)"
       },
       {
         "command": "projectManager.selectCatalog",
-        "title": "项目管家: 选择项目集合",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 选择项目集合",
+        "category": "CAtlas Hub",
         "icon": "$(library)"
       },
       {
         "command": "projectManager.importCatalog",
-        "title": "项目管家: 导入项目集合",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 导入项目集合",
+        "category": "CAtlas Hub",
         "icon": "$(cloud-download)"
       },
       {
         "command": "projectManager.importLegacyCatalog",
-        "title": "项目管家: 导入旧项目集合",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 导入旧项目集合",
+        "category": "CAtlas Hub",
         "icon": "$(history)"
       },
       {
         "command": "projectManager.exportCatalog",
-        "title": "项目管家: 导出项目集合",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 导出项目集合",
+        "category": "CAtlas Hub",
         "icon": "$(cloud-upload)"
       },
       {
         "command": "projectManager.exitCatalog",
-        "title": "项目管家: 退出当前项目集合",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 退出当前项目集合",
+        "category": "CAtlas Hub",
         "icon": "$(sign-out)"
       },
       {
         "command": "projectManager.configurePersonalSetting",
-        "title": "项目管家: 修改侧栏配置",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 修改侧栏配置",
+        "category": "CAtlas Hub",
         "icon": "$(settings-gear)"
       },
       {
         "command": "projectManager.createCatalogTemplate",
-        "title": "项目管家: 添加项目并创建集合（兼容入口）",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 添加项目并创建集合（兼容入口）",
+        "category": "CAtlas Hub",
         "icon": "$(new-file)"
       },
       {
         "command": "projectManager.openCatalogFile",
-        "title": "项目管家: 导入项目集合文件（兼容入口）",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 导入项目集合文件（兼容入口）",
+        "category": "CAtlas Hub",
         "icon": "$(folder-opened)"
       },
       {
         "command": "projectManager.openCatalogSource",
-        "title": "项目管家: 说明当前集合存储方式",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 说明当前集合存储方式",
+        "category": "CAtlas Hub",
         "icon": "$(json)"
       },
       {
         "command": "projectManager.refreshProjects",
-        "title": "项目管家: 刷新项目集合",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 刷新项目集合",
+        "category": "CAtlas Hub",
         "icon": "$(refresh)"
       },
       {
         "command": "projectManager.closeCatalog",
-        "title": "项目管家: 退出当前项目集合（兼容入口）",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 退出当前项目集合（兼容入口）",
+        "category": "CAtlas Hub",
         "icon": "$(close)"
       },
       {
         "command": "projectManager.openSettings",
-        "title": "项目管家: 打开插件设置",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 打开插件设置",
+        "category": "CAtlas Hub",
         "icon": "$(settings-gear)"
       },
       {
         "command": "projectManager.configureCatalogTabSetting",
-        "title": "项目管家: 修改集合标签页设置",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 修改集合标签页设置",
+        "category": "CAtlas Hub",
         "icon": "$(settings-gear)"
       },
       {
         "command": "projectManager.configureCatalogOutlineMode",
-        "title": "项目管家: 修改集合函数大纲模式",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 修改集合函数大纲模式",
+        "category": "CAtlas Hub",
         "icon": "$(symbol-method)"
       },
       {
         "command": "projectManager.configureCatalogTodoSetting",
-        "title": "项目管家: 修改集合代码 TODO 设置",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 修改集合代码 TODO 设置",
+        "category": "CAtlas Hub",
         "icon": "$(checklist)"
       },
       {
         "command": "projectManager.refreshSymbolOutline",
-        "title": "项目管家: 刷新当前文件函数大纲",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 刷新当前文件函数大纲",
+        "category": "CAtlas Hub",
         "icon": "$(refresh)"
       },
       {
         "command": "projectManager.selectSymbolOutlineAppearance",
-        "title": "项目管家: 选择函数大纲外观",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 选择函数大纲外观",
+        "category": "CAtlas Hub",
         "icon": "$(symbol-color)"
       },
       {
         "command": "projectManager.selectSymbolOutlineMode",
-        "title": "项目管家: 选择大纲模式",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 选择大纲模式",
+        "category": "CAtlas Hub",
         "icon": "$(settings-gear)"
       },
       {
         "command": "projectManager.showSymbolOutline",
-        "title": "项目管家: 打开/定位增强函数大纲",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 打开/定位增强函数大纲",
+        "category": "CAtlas Hub",
         "icon": "$(list-tree)"
       },
       {
         "command": "projectManager.openNativeOutline",
-        "title": "项目管家: 打开 VS Code 原生大纲",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 打开 VS Code 原生大纲",
+        "category": "CAtlas Hub",
         "icon": "$(outline-view-icon)"
       },
       {
         "command": "projectManager.resolveNativeOutlineConflict",
         "title": "当前配置仅使用增强大纲，点击修改",
-        "category": "项目管家",
+        "category": "CAtlas Hub",
         "icon": "$(warning)"
       },
       {
         "command": "projectManager.openProject",
-        "title": "项目管家: 打开项目",
-        "category": "项目管家"
+        "title": "CAtlas Hub: 打开项目",
+        "category": "CAtlas Hub"
       },
       {
         "command": "projectManager.openProjectInNewWindow",
         "title": "在新窗口打开项目",
-        "category": "项目管家"
+        "category": "CAtlas Hub"
       },
       {
         "command": "projectManager.openProjectInCurrentWindow",
         "title": "在当前窗口打开项目",
-        "category": "项目管家"
+        "category": "CAtlas Hub"
       },
       {
         "command": "projectManager.renameCatalog",
         "title": "重命名项目集合",
-        "category": "项目管家",
+        "category": "CAtlas Hub",
         "icon": "$(edit)"
       },
       {
         "command": "projectManager.renameProjectAlias",
         "title": "重命名项目别名",
-        "category": "项目管家",
+        "category": "CAtlas Hub",
         "icon": "$(edit)"
       },
       {
         "command": "projectManager.reselectProjectPath",
         "title": "重新选择项目路径",
-        "category": "项目管家",
+        "category": "CAtlas Hub",
         "icon": "$(folder-opened)"
       },
       {
         "command": "projectManager.removeProjectFromCatalog",
         "title": "从当前集合移出",
-        "category": "项目管家",
+        "category": "CAtlas Hub",
         "icon": "$(remove)"
       },
       {
         "command": "projectManager.todo.refresh",
-        "title": "项目管家: 刷新代码 TODO",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 刷新代码 TODO",
+        "category": "CAtlas Hub",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "projectManager.todo.fullRefresh",
+        "title": "CAtlas Hub: 完整更新代码 TODO（重新读取）",
+        "category": "CAtlas Hub",
+        "icon": "$(sync)"
       },
       {
         "command": "projectManager.todo.cancel",
         "title": "取消代码 TODO 扫描",
-        "category": "项目管家",
+        "category": "CAtlas Hub",
         "icon": "$(debug-stop)"
       },
       {
         "command": "projectManager.todo.selectScope",
         "title": "选择代码 TODO 扫描范围",
-        "category": "项目管家",
+        "category": "CAtlas Hub",
         "icon": "$(target)"
       },
       {
         "command": "projectManager.todo.selectGrouping",
         "title": "选择代码 TODO 分组方式",
-        "category": "项目管家",
+        "category": "CAtlas Hub",
         "icon": "$(list-tree)"
       },
       {
         "command": "projectManager.todo.filter",
         "title": "筛选代码 TODO",
-        "category": "项目管家",
+        "category": "CAtlas Hub",
         "icon": "$(filter)"
       },
       {
         "command": "projectManager.todo.clearFilter",
         "title": "清除代码 TODO 筛选",
-        "category": "项目管家",
+        "category": "CAtlas Hub",
         "icon": "$(clear-all)"
       },
       {
         "command": "projectManager.todo.open",
         "title": "打开代码 TODO",
-        "category": "项目管家"
+        "category": "CAtlas Hub"
       },
       {
         "command": "projectManager.todo.manageTags",
-        "title": "项目管家: 管理代码 TODO 关键词",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 管理代码 TODO 关键词",
+        "category": "CAtlas Hub",
         "icon": "$(tag)"
       },
       {
         "command": "projectManager.todo.addTag",
-        "title": "项目管家: 添加自定义 TODO 关键词",
-        "category": "项目管家",
+        "title": "CAtlas Hub: 添加自定义 TODO 关键词",
+        "category": "CAtlas Hub",
         "icon": "$(add)"
       },
       {
         "command": "projectManager.todo.configureOwner",
-        "title": "项目管家: 设置个人标记标识",
-        "category": "项目管家"
+        "title": "CAtlas Hub: 设置个人标记标识",
+        "category": "CAtlas Hub"
       },
       {
         "command": "projectManager.todo.quickMark",
-        "title": "项目管家: 快速标记当前行或选区",
-        "category": "项目管家"
+        "title": "CAtlas Hub: 快速标记当前行或选区",
+        "category": "CAtlas Hub",
+        "icon": "$(add)"
       },
       {
         "command": "projectManager.todo.repeatLastMark",
-        "title": "项目管家: 使用上次类型快速标记",
-        "category": "项目管家"
+        "title": "CAtlas Hub: 使用上次类型快速标记",
+        "category": "CAtlas Hub"
       },
       {
         "command": "projectManager.todo.changeMark",
-        "title": "项目管家: 修改当前注释标记",
-        "category": "项目管家"
+        "title": "CAtlas Hub: 修改当前注释标记",
+        "category": "CAtlas Hub"
       },
       {
         "command": "projectManager.todo.toggleCompleted",
-        "title": "项目管家: 完成/取消完成当前标记",
-        "category": "项目管家"
+        "title": "CAtlas Hub: 完成/取消完成当前标记",
+        "category": "CAtlas Hub"
       },
       {
         "command": "projectManager.todo.removeMark",
-        "title": "项目管家: 删除当前注释标记",
-        "category": "项目管家"
+        "title": "CAtlas Hub: 删除当前注释标记",
+        "category": "CAtlas Hub"
       },
       {
         "command": "projectManager.todo.assignToMe",
-        "title": "项目管家: 标记为我的",
-        "category": "项目管家"
+        "title": "CAtlas Hub: 标记为我的",
+        "category": "CAtlas Hub"
       },
       {
         "command": "projectManager.todo.unassignMine",
-        "title": "项目管家: 取消我的标记归属",
-        "category": "项目管家"
+        "title": "CAtlas Hub: 取消我的标记归属",
+        "category": "CAtlas Hub"
       },
       {
         "command": "projectManager.todo.configureShortcuts",
-        "title": "项目管家: 设置快速标记快捷键",
-        "category": "项目管家"
+        "title": "CAtlas Hub: 设置快速标记快捷键",
+        "category": "CAtlas Hub"
       }
     ],
     "menus": {
@@ -596,6 +616,11 @@
           "command": "projectManager.resolveNativeOutlineConflict",
           "when": "false",
           "group": "navigation@1"
+        },
+        {
+          "command": "projectManager.todo.quickMark",
+          "when": "view == projectManager.todoView",
+          "group": "navigation@0.5"
         },
         {
           "command": "projectManager.todo.refresh",
@@ -749,7 +774,7 @@
       ]
     },
     "configuration": {
-      "title": "项目管家",
+      "title": "CAtlas Hub",
       "properties": {
         "projectManager.exclusions.confirmBeforeApply": {
           "type": "boolean",
@@ -1028,10 +1053,11 @@
     "check": "npm run icons:check && tsc --noEmit -p ./",
     "test": "npm run test:unit",
     "test:unit": "npm run icons:check && npm run compile && node --test \"dist/test/**/*.test.js\"",
-    "test:integration": "npm run package:vsix && vscode-test",
+    "test:integration": "node scripts/package-vsix.mjs --stage preview-test --test",
+    "test:release-tools": "node --test scripts/package-vsix.test.mjs",
     "test:all": "npm run test:unit && npm run test:integration",
     "benchmark:todo": "npm run compile && node --expose-gc scripts/todo-benchmark.mjs",
-    "package:vsix": "vsce package --pre-release --no-dependencies --out releases/project-butler-0.10.0-preview-test.vsix"
+    "package:vsix": "node scripts/package-vsix.mjs"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",

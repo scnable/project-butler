@@ -1,3 +1,8 @@
+/**
+ * 配置栏负责展示设置、接收用户操作，再交给集合服务或 VS Code 配置接口保存。
+ * 配置项的最终取值应沿用各功能 settings 模块；不要在视图中另写一套配置优先级。
+ * 新增选项时需同时核对 package.json 声明、运行模块监听和导入导出范围；界面勾选变化不等于功能已经响应。
+ */
 import * as vscode from 'vscode';
 import { ProjectCatalogServiceV2 } from '../projectCatalog/catalogServiceV2';
 import { resolveEffectiveOutlineMode } from '../symbolOutline/outlineSettings';

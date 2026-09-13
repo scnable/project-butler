@@ -1,8 +1,13 @@
+/**
+ * 从共享 TodoIndex 构建分类、文件和标记节点；视图范围与筛选不应反向清空底层索引。
+ * 分类描述应沿用统一的描述处理规则，不能仅凭相同前缀把不同任务合并。
+ * 扫描进度与树重绘频率由注册入口和 todoViewRefreshPolicy 协调，避免每处理一个文件就重建整棵树。
+ */
 import * as vscode from 'vscode';
 import { TodoIndex } from './todoIndex';
 import { isMyTodoOwner } from './todoOwner';
 import { getTodoSettings } from './todoSettings';
-import { buildTodoHierarchy } from './todoTreeModel';
+import { formatTodoDescription, todoDescriptionGroupKey } from './todoDescription';
 import { TodoGrouping, TodoMatch, TodoResourceResult, TodoScope } from './todoTypes';
 
 export type TodoOwnership = 'mine' | 'other';
@@ -10,21 +15,20 @@ export type TodoOwnership = 'mine' | 'other';
 interface TodoNodeContext {
   readonly ownership?: TodoOwnership;
   readonly tag?: string;
+  readonly descriptionKey?: string;
 }
 
 export type TodoTreeNode =
   | { readonly kind: 'ownerGroup'; readonly ownership: TodoOwnership; readonly configured: boolean }
-  | { readonly kind: 'workspace'; readonly uri: string; readonly label: string; readonly ownership?: TodoOwnership; readonly tag?: string }
+  | { readonly kind: 'category'; readonly descriptionKey: string; readonly label: string; readonly ownership?: TodoOwnership }
   | { readonly kind: 'tag'; readonly tag: string; readonly ownership?: TodoOwnership }
-  | { readonly kind: 'directory'; readonly path: string; readonly label: string; readonly resources: readonly TodoResourceResult[]; readonly ownership?: TodoOwnership; readonly tag?: string }
-  | { readonly kind: 'file'; readonly resource: TodoResourceResult; readonly ownership?: TodoOwnership; readonly tag?: string }
-  | { readonly kind: 'result'; readonly resource: TodoResourceResult; readonly match: TodoMatch };
+  | { readonly kind: 'result'; readonly resource: TodoResourceResult; readonly match: TodoMatch; readonly grouping: TodoGrouping };
 
 export class TodoTreeProvider implements vscode.TreeDataProvider<TodoTreeNode>, vscode.Disposable {
   private readonly emitter = new vscode.EventEmitter<TodoTreeNode | undefined>();
   public readonly onDidChangeTreeData = this.emitter.event;
   public scope: TodoScope = 'workspace';
-  public grouping: TodoGrouping = 'file';
+  public grouping: TodoGrouping = 'category';
   public filter = '';
 
   public constructor(public readonly index: TodoIndex) {}
@@ -44,24 +48,19 @@ export class TodoTreeProvider implements vscode.TreeDataProvider<TodoTreeNode>, 
       if (!node.configured && node.ownership === 'mine') return [];
       return this.groupedNodes(this.filteredResources({ ownership: node.ownership }), { ownership: node.ownership });
     }
-    if (node?.kind === 'workspace') {
-      return this.hierarchyNodes(
-        this.filteredResources(node).filter((entry) => entry.workspaceUri === node.uri),
-        '',
-        node,
-      );
-    }
     if (node?.kind === 'tag') {
       const context: TodoNodeContext = {
         tag: node.tag,
         ...(node.ownership === undefined ? {} : { ownership: node.ownership }),
       };
-      return this.workspaceOrHierarchy(this.filteredResources(context), context);
+      return this.resultNodes(this.filteredResources(context), context);
     }
-    if (node?.kind === 'directory') return this.hierarchyNodes(node.resources, node.path, node);
-    if (node?.kind === 'file') {
-      return this.visibleMatches(node.resource, node)
-        .map((match) => ({ kind: 'result', resource: node.resource, match }));
+    if (node?.kind === 'category') {
+      const context: TodoNodeContext = {
+        descriptionKey: node.descriptionKey,
+        ...(node.ownership === undefined ? {} : { ownership: node.ownership }),
+      };
+      return this.resultNodes(this.filteredResources(context), context);
     }
     if (node !== undefined) return [];
 
@@ -95,6 +94,7 @@ export class TodoTreeProvider implements vscode.TreeDataProvider<TodoTreeNode>, 
       );
       item.description = !node.configured && isMine ? '设置个人标识' : String(count);
       item.iconPath = new vscode.ThemeIcon(isMine ? 'account' : 'repo');
+      item.id = `projectManager.todo.owner.${node.ownership}`;
       item.contextValue = `projectManager.todo.ownerGroup.${node.ownership}`;
       if (!node.configured && isMine) {
         item.command = { command: 'projectManager.todo.configureOwner', title: '设置个人标记标识' };
@@ -102,43 +102,34 @@ export class TodoTreeProvider implements vscode.TreeDataProvider<TodoTreeNode>, 
       }
       return item;
     }
-    if (node.kind === 'workspace') {
-      const item = new vscode.TreeItem(node.label, vscode.TreeItemCollapsibleState.Expanded);
-      item.iconPath = new vscode.ThemeIcon('root-folder');
-      return item;
-    }
     if (node.kind === 'tag') {
       const count = this.countMatches(this.filteredResources(node), node);
       const item = new vscode.TreeItem(node.tag, vscode.TreeItemCollapsibleState.Expanded);
       item.description = String(count);
       item.iconPath = this.tagIcon(node.tag);
+      item.id = `projectManager.todo.tag.${node.ownership ?? 'all'}.${node.tag}`;
       return item;
     }
-    if (node.kind === 'directory') {
-      const count = this.countMatches(node.resources, node);
+    if (node.kind === 'category') {
+      const count = this.countMatches(this.filteredResources(node), node);
       const item = new vscode.TreeItem(node.label, vscode.TreeItemCollapsibleState.Expanded);
       item.description = String(count);
-      item.iconPath = new vscode.ThemeIcon('folder');
-      item.tooltip = `${node.path} · ${count} 条标记`;
+      item.iconPath = new vscode.ThemeIcon('list-tree');
+      item.id = `projectManager.todo.description.${node.ownership ?? 'all'}.${node.descriptionKey}`;
       return item;
     }
-    if (node.kind === 'file') {
-      const count = this.visibleMatches(node.resource, node).length;
-      const item = new vscode.TreeItem(node.resource.relativePath.split('/').pop() ?? node.resource.relativePath, vscode.TreeItemCollapsibleState.Expanded);
-      item.description = String(count);
-      item.tooltip = `${node.resource.relativePath} · ${count} 条标记`;
-      item.resourceUri = vscode.Uri.parse(node.resource.uri);
-      return item;
-    }
-    const label = node.match.text.length === 0 ? node.match.tag : node.match.text;
+    const fileName = node.resource.relativePath.split('/').pop() ?? node.resource.relativePath;
+    const location = `${fileName}:${node.match.line + 1}`;
+    const label = node.grouping === 'category' ? location : formatTodoDescription(node.match.text);
     const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.None);
-    item.description = `${node.match.tag} · ${node.match.line + 1}`;
+    item.description = node.grouping === 'category' ? node.match.tag : `${node.match.tag} · ${location}`;
     item.iconPath = this.tagIcon(node.match.tag);
     const mine = isMyTodoOwner(node.match.owner, getTodoSettings().ownerIdentities);
     item.contextValue = `projectManager.todo.result.${mine ? 'mine' : 'other'}`;
     item.command = { command: 'projectManager.todo.open', title: '打开 TODO', arguments: [node] };
     const owner = node.match.owner === undefined ? '未分配' : node.match.owner;
-    item.tooltip = `${node.match.tag}: ${node.match.text}\n负责人：${owner}\n${node.resource.relativePath}:${node.match.line + 1}`;
+    const fullDescription = node.match.text.trim().length === 0 ? '未填写描述' : node.match.text.trim();
+    item.tooltip = `${fullDescription}\n类型：${node.match.tag}\n负责人：${owner}\n${node.resource.relativePath}:${node.match.line + 1}`;
     return item;
   }
 
@@ -150,46 +141,33 @@ export class TodoTreeProvider implements vscode.TreeDataProvider<TodoTreeNode>, 
         .sort()
         .map((tag) => ({ kind: 'tag', tag, ...(context.ownership === undefined ? {} : { ownership: context.ownership }) }));
     }
-    return this.workspaceOrHierarchy(resources, context);
-  }
-
-  private workspaceOrHierarchy(resources: readonly TodoResourceResult[], context: TodoNodeContext): TodoTreeNode[] {
-    const workspaceUris = [...new Set(resources.map((entry) => entry.workspaceUri).filter((uri): uri is string => uri !== undefined))];
-    if (workspaceUris.length <= 1) return this.hierarchyNodes(resources, '', context);
-    return workspaceUris.map((uri) => ({
-      kind: 'workspace',
-      uri,
-      label: vscode.workspace.workspaceFolders?.find((folder) => folder.uri.toString() === uri)?.name ?? uri,
-      ...(context.ownership === undefined ? {} : { ownership: context.ownership }),
-      ...(context.tag === undefined ? {} : { tag: context.tag }),
-    }));
+    return [...new Set(resources.flatMap((entry) => this.visibleMatches(entry, context)
+      .map((match) => todoDescriptionGroupKey(match.text))))]
+      .sort((left, right) => formatTodoDescription(left).localeCompare(formatTodoDescription(right), 'zh-CN', { numeric: true })
+        || left.localeCompare(right, 'zh-CN', { numeric: true }))
+      .map((descriptionKey) => ({
+        kind: 'category' as const,
+        descriptionKey,
+        label: formatTodoDescription(descriptionKey),
+        ...(context.ownership === undefined ? {} : { ownership: context.ownership }),
+      }));
   }
 
   private filteredResources(context: TodoNodeContext = {}): TodoResourceResult[] {
     return this.index.values().filter((entry) => this.visibleMatches(entry, context).length > 0);
   }
 
-  private hierarchyNodes(
-    resources: readonly TodoResourceResult[],
-    parentPath = '',
-    context: TodoNodeContext = {},
-  ): TodoTreeNode[] {
-    const hierarchy = buildTodoHierarchy(resources, parentPath);
-    const directoryNodes: TodoTreeNode[] = hierarchy.directories.map((directory) => ({
-      kind: 'directory',
-      label: directory.label,
-      path: directory.path,
-      resources: directory.resources,
-      ...(context.ownership === undefined ? {} : { ownership: context.ownership }),
-      ...(context.tag === undefined ? {} : { tag: context.tag }),
-    }));
-    const fileNodes: TodoTreeNode[] = hierarchy.files.map((resource) => ({
-      kind: 'file',
-      resource,
-      ...(context.ownership === undefined ? {} : { ownership: context.ownership }),
-      ...(context.tag === undefined ? {} : { tag: context.tag }),
-    }));
-    return [...directoryNodes, ...fileNodes];
+  private resultNodes(resources: readonly TodoResourceResult[], context: TodoNodeContext): TodoTreeNode[] {
+    return resources
+      .flatMap((resource) => this.visibleMatches(resource, context).map((match) => ({
+        kind: 'result' as const,
+        resource,
+        match,
+        grouping: this.grouping,
+      })))
+      .sort((left, right) => formatTodoDescription(left.match.text).localeCompare(formatTodoDescription(right.match.text), 'zh-CN', { numeric: true })
+        || left.resource.relativePath.localeCompare(right.resource.relativePath, 'zh-CN', { numeric: true })
+        || left.match.line - right.match.line);
   }
 
   private countMatches(resources: readonly TodoResourceResult[], context: TodoNodeContext = {}): number {
@@ -200,6 +178,8 @@ export class TodoTreeProvider implements vscode.TreeDataProvider<TodoTreeNode>, 
     const identities = getTodoSettings().ownerIdentities;
     return resource.matches
       .filter((match) => context.tag === undefined || match.tag === context.tag)
+      .filter((match) => context.descriptionKey === undefined
+        || todoDescriptionGroupKey(match.text) === context.descriptionKey)
       .filter((match) => context.ownership === undefined
         || (context.ownership === 'mine') === isMyTodoOwner(match.owner, identities))
       .filter((match) => this.matchesFilter(resource, match));

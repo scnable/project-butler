@@ -1,6 +1,8 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 import { getTodoCommentSyntax, getTodoInsertionToken, inferTodoLanguageId } from '../todo/todoCommentSyntax';
+import { collectSelectableTodoDescriptions, EMPTY_TODO_DESCRIPTION, formatTodoDescription, normalizeTodoDescription, todoDescriptionGroupKey, todoDescriptionInputValue } from '../todo/todoDescription';
+import { formatTodoFreshness, todoUpdateAgeDays } from '../todo/todoFreshness';
 import { TodoIndex } from '../todo/todoIndex';
 import { findMarker } from '../todo/todoMarkerModel';
 import { isMyTodoOwner, normalizeTodoOwner, normalizeTodoOwners } from '../todo/todoOwner';
@@ -19,6 +21,7 @@ import {
   normalizeTodoTagNames,
 } from '../todo/todoTags';
 import { TodoViewRefreshPolicy } from '../todo/todoViewRefreshPolicy';
+import { TodoUpdateQueue } from '../todo/todoUpdateQueue';
 import { buildTodoHierarchy } from '../todo/todoTreeModel';
 import { TodoMatch } from '../todo/todoTypes';
 
@@ -26,6 +29,35 @@ const SAMPLE_MATCH: TodoMatch = {
   tag: 'TODO', rawTag: 'TODO', text: 'sample', line: 0,
   startCharacter: 3, endCharacter: 7, completed: false, source: 'comment',
 };
+
+describe('TODO 任务描述', () => {
+  it('规范化空白并限制 30 个 Unicode 字符', () => {
+    assert.equal(normalizeTodoDescription('  添加   账号功能  '), '添加 账号功能');
+    assert.equal(normalizeTodoDescription(''), undefined);
+    assert.equal(normalizeTodoDescription('任'.repeat(31)), undefined);
+    assert.equal(normalizeTodoDescription('🚀'.repeat(30)), '🚀'.repeat(30));
+  });
+
+  it('展示标题对旧空描述降级并在 30 字符内省略', () => {
+    assert.equal(formatTodoDescription('   '), EMPTY_TODO_DESCRIPTION);
+    const formatted = formatTodoDescription('优'.repeat(31));
+    assert.equal([...formatted].length, 30);
+    assert.equal(formatted, `${'优'.repeat(29)}…`);
+    assert.equal(todoDescriptionInputValue('改'.repeat(35)), '改'.repeat(30));
+  });
+
+  it('已有描述选项规范化、去重并排除不能直接复用的值', () => {
+    assert.deepEqual(collectSelectableTodoDescriptions([
+      ' 修改连接问题 ', '添加  账号功能', '修改连接问题', '', '超'.repeat(31),
+    ]), ['添加 账号功能', '修改连接问题'].sort((left, right) => left.localeCompare(right, 'zh-CN', { numeric: true })));
+  });
+
+  it('使用规范化后的完整描述作为任务分组键', () => {
+    assert.equal(todoDescriptionGroupKey(' 添加  账号设置功能 '), '添加 账号设置功能');
+    assert.notEqual(todoDescriptionGroupKey('优化缓存刷新逻辑'), todoDescriptionGroupKey('优化连接刷新逻辑'));
+    assert.equal(todoDescriptionGroupKey('   '), '');
+  });
+});
 
 describe('代码 TODO 关键词', () => {
   it('提供五个默认标签并规范化自定义关键词', () => {
@@ -165,6 +197,24 @@ describe('代码 TODO 注释语法与索引', () => {
     assert.equal(index.get('temporary'), undefined);
     assert.equal(index.replace('removed', [SAMPLE_MATCH], 5, 'src/removed.ts'), false);
   });
+
+  it('完整扫描提交时保留扫描开始后的实时修改和删除', () => {
+    const index = new TodoIndex();
+    index.replace('old', [SAMPLE_MATCH], 2, 'src/old.ts');
+    index.replace('live', [{ ...SAMPLE_MATCH, text: 'live' }], 12, 'src/live.ts');
+    index.removeAtRevision('removed-live', 13);
+
+    const staging = new TodoIndex();
+    staging.replace('scanned', [SAMPLE_MATCH], 10, 'src/scanned.ts');
+    staging.replace('live', [{ ...SAMPLE_MATCH, text: 'stale' }], 10, 'src/live.ts');
+    staging.replace('removed-live', [SAMPLE_MATCH], 10, 'src/removed-live.ts');
+    index.reconcile(staging.snapshot(), 10);
+
+    assert.deepEqual(index.values().map((entry) => entry.uri), ['live', 'scanned']);
+    assert.equal(index.get('live')?.matches[0]?.text, 'live');
+    assert.equal(index.get('old'), undefined);
+    assert.equal(index.get('removed-live'), undefined);
+  });
 });
 
 describe('代码 TODO 快速标记定位', () => {
@@ -271,6 +321,7 @@ describe('代码 TODO 快速扫描视图策略', () => {
     assert.equal(policy.shouldRefreshTree('openFiles'), false);
     for (let index = 0; index < 10_000; index += 1) assert.equal(policy.shouldRefreshTree('progress'), false);
     assert.equal(policy.shouldRefreshTree('incremental'), false);
+    assert.equal(policy.shouldRefreshTree('live'), true);
     assert.equal(policy.shouldRefreshTree('complete'), true);
     assert.equal(policy.shouldRefreshTree('incremental'), true);
   });
@@ -323,5 +374,32 @@ describe('代码 TODO 快速扫描视图策略', () => {
     assert.deepEqual(committed, []);
     assert.equal(summary.cancelled, true);
     assert.equal(summary.results, 0);
+  });
+});
+
+describe('代码 TODO 后台更新队列与更新时间', () => {
+  it('合并同一文件的重复事件并保留最后一次内容', async () => {
+    const processed: string[] = [];
+    const queue = new TodoUpdateQueue<string>(async (key, value) => {
+      processed.push(`${key}:${value}`);
+    }, { delayMs: 5, batchDelayMs: 1, batchSize: 2, concurrency: 1 });
+    queue.enqueue('a', 'old');
+    queue.enqueue('a', 'new');
+    queue.enqueue('b', 'only');
+
+    await queue.whenIdle();
+    queue.dispose();
+
+    assert.deepEqual(processed.sort(), ['a:new', 'b:only']);
+  });
+
+  it('按分钟、小时和天显示上次完整更新时间', () => {
+    const now = Date.UTC(2026, 7, 29, 12);
+    assert.equal(formatTodoFreshness(undefined, now), '尚未完整更新');
+    assert.equal(formatTodoFreshness(now - 30_000, now), '刚刚更新');
+    assert.equal(formatTodoFreshness(now - 5 * 60_000, now), '上次完整更新 5 分钟前');
+    assert.equal(formatTodoFreshness(now - 3 * 60 * 60_000, now), '上次完整更新 3 小时前');
+    assert.equal(formatTodoFreshness(now - 4 * 24 * 60 * 60_000, now), '上次完整更新 4 天前');
+    assert.equal(todoUpdateAgeDays(now - 4 * 24 * 60 * 60_000, now), 4);
   });
 });

@@ -1,3 +1,7 @@
+/**
+ * 把统一图标定义转换为 TreeItem 使用的明暗主题 URI，或按设置退回原生 ThemeIcon。
+ * Webview 使用另一套资源地址转换，不能直接复用这里的 URI；两者应共用 iconSemantics 的含义映射。
+ */
 import * as vscode from 'vscode';
 import { IconSemantic, resolveIconResource } from './iconSemantics';
 import { IconStyle, normalizeIconStyle } from './iconStyle';

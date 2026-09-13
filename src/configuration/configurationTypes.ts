@@ -1,3 +1,8 @@
+/**
+ * 跨功能的配置接口：标签、增强大纲和 TODO 通过它读取集合覆盖值，不直接操作集合存储。
+ * undefined 表示没有该项集合覆盖，不代表功能关闭；最终取值由各功能的 settings 模块决定。
+ * onDidChange 通知来源状态发生变化，消费者仍需比较有效配置，不能每次通知都重做昂贵操作。
+ */
 import * as vscode from 'vscode';
 import { CatalogSymbolOutlineSettings, CatalogTabSettings } from '../projectCatalog/catalogModel';
 import { CatalogTodoOverrides } from '../todo/todoSettings';

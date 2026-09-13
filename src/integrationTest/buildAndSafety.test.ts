@@ -2,6 +2,7 @@ import * as assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import * as path from 'node:path';
 import { promisify } from 'node:util';
+import { createHash } from 'node:crypto';
 import * as vscode from 'vscode';
 import { createStoredCatalog } from '../projectCatalog/catalogStore';
 import { closeAllEditors, createCatalogForWorkspace, getApi, openText, projectUri, seedCatalogs } from './helpers';
@@ -18,7 +19,7 @@ suite('构建、错误隔离、安全与性能', () => {
   });
 
   test('INT-156 Manifest 贡献命令与运行时命令一致', async () => {
-    const extension = vscode.extensions.getExtension('local-development.project-butler');
+    const extension = vscode.extensions.getExtension('scnable.catlas-hub');
     assert.ok(extension);
     const contributed = (extension.packageJSON.contributes.commands as Array<{ command: string }>).map((item) => item.command);
     const runtime = new Set(await vscode.commands.getCommands(true));
@@ -31,15 +32,12 @@ suite('构建、错误隔离、安全与性能', () => {
     for (const rule of ['.github/**', 'node_modules/**', '.local-tools/**', 'src/**', 'scripts/**', 'test-fixtures/**', 'dist/integrationTest/**', '**/*.test.js', '.vscode-test.*']) {
       assert.match(ignore, new RegExp(escapeRegExp(rule)));
     }
-    const packageText = new TextDecoder().decode(await vscode.workspace.fs.readFile(projectUri(api, 'package.json')));
-    const manifest = JSON.parse(packageText) as { scripts?: Record<string, string> };
-    const packageCommand = manifest.scripts?.['package:vsix'];
-    assert.ok(packageCommand, 'package.json 必须声明 package:vsix');
-    const outputMatch = /--out\s+(?:"([^"]+)"|'([^']+)'|(\S+))/u.exec(packageCommand);
-    const vsixRelativePath = outputMatch?.slice(1).find((value): value is string => value !== undefined);
-    assert.ok(vsixRelativePath, 'package:vsix 必须通过 --out 声明候选包路径');
-    const vsix = projectUri(api, vsixRelativePath.replaceAll('\\', '/'));
+    const candidate = process.env.PROJECT_BUTLER_TEST_VSIX;
+    assert.ok(candidate && path.isAbsolute(candidate), '必须显式传入本次构建的安装包绝对路径');
+    const vsix = vscode.Uri.file(candidate);
     assert.ok((await vscode.workspace.fs.stat(vsix)).size > 0);
+    const bytes = await vscode.workspace.fs.readFile(vsix);
+    assert.equal(createHash('sha256').update(bytes).digest('hex'), process.env.PROJECT_BUTLER_TEST_SHA256);
     const { stdout } = await promisify(execFile)('tar.exe', ['-tf', vsix.fsPath]);
     const entries = stdout.split(/\r?\n/u).filter(Boolean);
     const forbidden = [
@@ -81,7 +79,7 @@ suite('构建、错误隔离、安全与性能', () => {
   });
 
   test('INT-163 具有删除或重命名语义的命令均限定到安全对象', () => {
-    const extension = vscode.extensions.getExtension('local-development.project-butler')!;
+    const extension = vscode.extensions.getExtension('scnable.catlas-hub')!;
     const commands = (extension.packageJSON.contributes.commands as Array<{ command: string }>).map((item) => item.command.toLocaleLowerCase());
     const allowedScopedMutationCommands = new Set([
       'projectmanager.renamecatalog',
@@ -131,14 +129,16 @@ suite('构建、错误隔离、安全与性能', () => {
     assert.match(workflow, /workflow_dispatch:/u);
     assert.match(workflow, /contents:\s*read/u);
     assert.doesNotMatch(workflow, /contents:\s*write/u);
-    for (const command of ['npm ci --ignore-scripts', 'npm run check', 'npm run test:unit', 'npm run package:vsix']) {
+    for (const command of ['npm ci --ignore-scripts', 'npm run check', 'npm run test:unit', 'npm run test:release-tools', 'npm run test:integration']) {
       assert.match(workflow, new RegExp(escapeRegExp(command)));
     }
-    assert.match(workflow, /--label extensionHost/u);
-    assert.match(workflow, /--label installedCandidate/u);
     assert.match(workflow, /persist-credentials:\s*false/u);
-    assert.match(workflow, /require\('\.\/package\.json'\)\.version/u);
-    assert.match(workflow, /PROJECT_BUTLER_TEST_VSIX=\$packagePath/u);
+    const runner = new TextDecoder().decode(await vscode.workspace.fs.readFile(projectUri(api, 'scripts/package-vsix.mjs')));
+    assert.match(runner, /\['todoOomRegression', 'extensionHost', 'installedVsix'\]/u);
+    assert.match(runner, /PROJECT_BUTLER_TEST_VSIX: outputPath/u);
+    assert.match(runner, /PROJECT_BUTLER_TEST_SHA256: sha256/u);
+    assert.match(runner, /await run\(/u);
+    assert.match(runner, /await hashPackage\(outputPath\) !== sha256/u);
     assert.doesNotMatch(workflow, /project-butler-0\.10\.0-preview-test\.vsix/u);
   });
 });

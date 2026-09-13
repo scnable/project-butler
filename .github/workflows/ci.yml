@@ -46,11 +46,20 @@ jobs:
       - name: Unit tests
         run: npm run test:unit
 
+      - name: Release tooling tests
+        run: npm run test:release-tools
+
   extension-host:
-    name: Extension Host (Windows)
+    name: Extension Host (Windows, VS Code ${{ matrix.vscode }})
     needs: quality
     runs-on: windows-latest
     timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        vscode: ['1.88.0', 'stable']
+    env:
+      PROJECT_BUTLER_TEST_VSCODE_VERSION: ${{ matrix.vscode }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -67,30 +76,14 @@ jobs:
         uses: actions/cache@v6
         with:
           path: .vscode-test/vscode-*
-          key: vscode-test-${{ runner.os }}-stable-v1
+          key: vscode-test-${{ runner.os }}-${{ matrix.vscode }}-v2
 
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
       - name: Prepare package directory
-        run: |
-          node -e "require('node:fs').mkdirSync('releases', { recursive: true })"
+        run: node -e "require('node:fs').mkdirSync('releases', { recursive: true })"
 
-      - name: Build preview package
-        run: npm run package:vsix
-
-      - name: Resolve preview package path
-        shell: pwsh
-        run: |
-          $version = node -p "require('./package.json').version"
-          $packagePath = "releases/project-butler-$version-preview-test.vsix"
-          if (-not (Test-Path -LiteralPath $packagePath -PathType Leaf)) {
-            throw "Expected preview package was not created: $packagePath"
-          }
-          Add-Content -LiteralPath $env:GITHUB_ENV -Value "PROJECT_BUTLER_TEST_VSIX=$packagePath"
-
-      - name: Source Extension Host tests
-        run: npx vscode-test --label extensionHost
-
-      - name: Installed VSIX tests
-        run: npx vscode-test --config .vscode-test-installed-candidate.mjs --label installedCandidate
+      # 在同一进程中传递本轮产物，依次验证 OOM、源码宿主与安装态；任一步失败立即终止。
+      - name: Build and verify exact candidate (OOM, source, installed)
+        run: npm run test:integration

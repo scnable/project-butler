@@ -1,3 +1,8 @@
+/**
+ * 已打开文件树的纯数据模型：按编辑器组、工作区和路径构建节点，并压缩公共目录部分。
+ * 输入来自 openedFilesTreeProvider；显示名称和压缩路径不是资源唯一标识，不能用它们代替文件比较键。
+ * 历史重复项和异常相对路径问题要求不同工作区、外部资源保持边界，不能跨根目录拼接公共路径。
+ */
 export type OpenedFileNodeKind = 'group' | 'workspace' | 'directory' | 'externalGroup' | 'file';
 
 export interface OpenedFileDescriptor {

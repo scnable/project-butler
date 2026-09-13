@@ -1,4 +1,4 @@
-export type TodoViewUpdateKind = 'start' | 'openFiles' | 'progress' | 'incremental' | 'complete';
+export type TodoViewUpdateKind = 'start' | 'openFiles' | 'progress' | 'incremental' | 'live' | 'complete';
 
 export class TodoViewRefreshPolicy {
   private scanning = false;
@@ -18,6 +18,8 @@ export class TodoViewRefreshPolicy {
         return false;
       case 'incremental':
         return !this.scanning;
+      case 'live':
+        return true;
       case 'complete':
         this.scanning = false;
         return true;

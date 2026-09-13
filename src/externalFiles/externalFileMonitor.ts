@@ -1,3 +1,8 @@
+/**
+ * 根据当前工作区判断外部文件，提供文件装饰、状态栏和查看入口，不依赖必须创建项目集合。
+ * FileDecoration 的颜色、标记和提示由 VS Code 决定实际显示位置，不能控制标签边框或任意字体样式。
+ * 此模块不参与标签移动；外部文件的排列由 tabManagementService 单独负责。
+ */
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { getUriDisplayPath } from '../shared/uri';
@@ -21,7 +26,7 @@ export class ExternalFileMonitor implements vscode.FileDecorationProvider, vscod
       vscode.StatusBarAlignment.Left,
       100,
     );
-    this.statusBarItem.name = '项目管家：工作区外文件';
+    this.statusBarItem.name = 'CAtlas Hub：工作区外文件';
     this.statusBarItem.command = 'projectManager.showExternalFiles';
 
     this.disposables.push(

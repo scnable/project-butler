@@ -8,6 +8,7 @@ import {
 } from '../configuration/configurationTreeProvider';
 import { createStoredCatalog } from '../projectCatalog/catalogStore';
 import { resolveVscodeCapabilities } from '../platform/vscodeCapabilitiesModel';
+import { detectVscodeCapabilities } from '../platform/vscodeCapabilities';
 import { getTodoSettings } from '../todo/todoSettings';
 import {
   createCatalogForWorkspace,
@@ -207,6 +208,7 @@ suite('配置侧栏、优先级与实时生效', () => {
   });
 
   test('INT-028 完全关闭内置 AI 前确认并写入用户级 true', async () => {
+    if (await verifyUnavailableAi()) return;
     const api = await getApi();
     await applyPersonalSettingValue('disableAiFeatures', false);
     const provider = new ConfigurationTreeProvider(api.catalogs.service, api.context.globalState, interaction(true, true));
@@ -216,6 +218,7 @@ suite('配置侧栏、优先级与实时生效', () => {
   });
 
   test('INT-029 取消关闭内置 AI 不修改配置', async () => {
+    if (await verifyUnavailableAi()) return;
     const api = await getApi();
     await applyPersonalSettingValue('disableAiFeatures', false);
     const provider = new ConfigurationTreeProvider(api.catalogs.service, api.context.globalState, interaction(true, false));
@@ -225,6 +228,7 @@ suite('配置侧栏、优先级与实时生效', () => {
   });
 
   test('INT-030 从侧栏重新开启内置 AI', async () => {
+    if (await verifyUnavailableAi()) return;
     const api = await getApi();
     await applyPersonalSettingValue('disableAiFeatures', true);
     const provider = new ConfigurationTreeProvider(api.catalogs.service, api.context.globalState, interaction(false, true));
@@ -234,6 +238,7 @@ suite('配置侧栏、优先级与实时生效', () => {
   });
 
   test('INT-031 外部修改 AI 设置后配置树触发刷新', async () => {
+    if (await verifyUnavailableAi()) return;
     const api = await getApi();
     const changed = new Promise<void>((resolve) => {
       const disposable = api.catalogs.configurationProvider.onDidChangeTreeData(() => {
@@ -250,6 +255,7 @@ suite('配置侧栏、优先级与实时生效', () => {
   });
 
   test('INT-032 AI 工作区覆盖在配置条目中可见', async () => {
+    if (await verifyUnavailableAi()) return;
     const api = await getApi();
     await applyPersonalSettingValue('disableAiFeatures', true);
     const group = api.catalogs.configurationProvider.getChildren().find((node) => node.kind === 'group' && node.id === 'ai');
@@ -308,6 +314,7 @@ suite('配置侧栏、优先级与实时生效', () => {
   });
 
   test('INT-047 VS Code 配置检查结果体现工作区高于用户级', async () => {
+    if (await verifyUnavailableAi()) return;
     await setGlobalSetting('chat', 'disableAIFeatures', true);
     const inspected = vscode.workspace.getConfiguration('chat').inspect<boolean>('disableAIFeatures');
     assert.equal(inspected?.globalValue, true);
@@ -409,6 +416,33 @@ suite('配置侧栏、优先级与实时生效', () => {
   });
 });
 
+/** 不跳过旧版验收：实际检查不可用入口、提示和禁止写入，而不是伪造已注册的设置。 */
+async function verifyUnavailableAi(): Promise<boolean> {
+  if (detectVscodeCapabilities().chatDisableAiFeatures.supported) return false;
+  const api = await getApi();
+  const before = vscode.workspace.getConfiguration('chat').inspect('disableAIFeatures');
+  let warnings = 0;
+  const provider = new ConfigurationTreeProvider(api.catalogs.service, api.context.globalState, {
+    async choose() { assert.fail('不支持 AI 设置时不得进入选择流程'); },
+    async confirmDisableAi() { assert.fail('不支持 AI 设置时不得要求确认'); },
+    async confirmProjectMarkers() { return false; },
+    async showWarning(message) { assert.match(message, /1\.104/); warnings += 1; },
+    async showInformation() {},
+  });
+  try {
+    const group = provider.getChildren().find((node) => node.kind === 'group' && node.id === 'ai');
+    assert.ok(group);
+    const item = provider.getTreeItem(provider.getChildren(group)[0] as ConfigurationTreeNode);
+    assert.equal(item.command, undefined);
+    assert.match(String(item.description), /不可用/);
+    await provider.configurePersonalSetting('disableAiFeatures');
+    assert.equal(warnings, 1);
+    await assert.rejects(() => applyPersonalSettingValue('disableAiFeatures', true), /未注册 chat\.disableAIFeatures/);
+    assert.deepEqual(vscode.workspace.getConfiguration('chat').inspect('disableAIFeatures'), before);
+  } finally { provider.dispose(); }
+  return true;
+}
+
 function interaction(value: string | boolean | number | undefined, confirmation: boolean): ConfigurationInteraction {
   return {
     async choose(definition) {
@@ -430,7 +464,9 @@ async function restorePersonalDefaults(): Promise<void> {
   await applyPersonalSettingValue('outlineModeDefault', 'both');
   await applyPersonalSettingValue('openMode', 'prompt');
   await applyPersonalSettingValue('confirmExclude', true);
-  await applyPersonalSettingValue('disableAiFeatures', false);
+  if (detectVscodeCapabilities().chatDisableAiFeatures.supported) {
+    await applyPersonalSettingValue('disableAiFeatures', false);
+  }
   await applyPersonalSettingValue('externalEnabled', true);
   await applyPersonalSettingValue('externalColor', true);
   await applyPersonalSettingValue('externalBadge', true);

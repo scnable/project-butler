@@ -1,3 +1,8 @@
+/**
+ * 管理项目集合的内存状态、持久化和当前工作区所属项目，并实现功能配置来源接口。
+ * 标签、大纲和 TODO 不直接读取这里的存储键，而是通过 configurationTypes 中的接口获取覆盖值。
+ * 修改集合或项目归属时，需要保持保存结果、当前项目判断和变更通知一致，否则配置栏与实际功能会不同步。
+ */
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { ProjectFeatureConfigurationSource } from '../configuration/configurationTypes';
@@ -691,7 +696,7 @@ export class ProjectCatalogServiceV2 implements vscode.Disposable, ProjectFeatur
       }
       this.output.show(true);
       confirmed = await vscode.window.showInformationMessage(
-        '兼容详情已显示在“项目管家”输出中，是否继续导入？',
+        '兼容详情已显示在“CAtlas Hub”输出中，是否继续导入？',
         { modal: true },
         '确认导入',
       );
@@ -743,7 +748,7 @@ export class ProjectCatalogServiceV2 implements vscode.Disposable, ProjectFeatur
     }
     const suggestedBase = vscode.workspace.workspaceFolders?.[0]?.uri;
     const selectedUri = await vscode.window.showSaveDialog({
-      filters: { '项目管家导出文件': ['project-butler-export.json'] },
+      filters: { 'CAtlas Hub导出文件': ['project-butler-export.json'] },
       saveLabel: '导出集合',
       title: '选择迁移快照保存位置',
       ...(suggestedBase === undefined ? {} : { defaultUri: vscode.Uri.joinPath(suggestedBase, 'project-butler-export.json') }),

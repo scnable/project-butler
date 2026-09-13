@@ -1,3 +1,8 @@
+/**
+ * 把 VS Code 当前标签转换为文件描述，再交给 openedFilesTreeModel 生成目录结构。
+ * 跳转需保留真实 URI 和编辑器组信息；目录压缩只是显示处理，不能据显示路径重新猜测文件地址。
+ * 此视图不负责移动标签；调整展示不应改变 tabManagementService 的排序行为。
+ */
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import {

@@ -178,7 +178,7 @@ export class ProjectCatalogService implements vscode.Disposable {
       canSelectFiles: true,
       canSelectFolders: false,
       canSelectMany: false,
-      filters: { '项目管家集合文件': ['project-butler.json'], JSON: ['json'] },
+      filters: { 'CAtlas Hub集合文件': ['project-butler.json'], JSON: ['json'] },
       openLabel: '打开项目集合',
       title: '选择 *.project-butler.json 项目集合文件',
     });
@@ -208,7 +208,7 @@ export class ProjectCatalogService implements vscode.Disposable {
       ? vscode.workspace.workspaceFolders?.[0]?.uri
       : vscode.Uri.joinPath(this.activeCatalog.uri, '..');
     const saveOptions: vscode.SaveDialogOptions = {
-      filters: { '项目管家集合文件': ['project-butler.json'] },
+      filters: { 'CAtlas Hub集合文件': ['project-butler.json'] },
       saveLabel: '创建项目集合模板',
       title: '创建带使用说明的项目集合模板',
       ...(baseUri === undefined
@@ -225,7 +225,7 @@ export class ProjectCatalogService implements vscode.Disposable {
       : selectedUri.with({ path: `${selectedUri.path}${CATALOG_FILE_SUFFIX}` });
     try {
       await vscode.workspace.fs.stat(uri);
-      await vscode.window.showErrorMessage(`文件已经存在，项目管家不会覆盖它：${uri.fsPath}`);
+      await vscode.window.showErrorMessage(`文件已经存在，CAtlas Hub不会覆盖它：${uri.fsPath}`);
       return;
     } catch (error) {
       if (!(error instanceof vscode.FileSystemError) || error.code !== 'FileNotFound') {

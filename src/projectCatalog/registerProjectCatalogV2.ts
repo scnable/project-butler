@@ -1,3 +1,8 @@
+/**
+ * 项目集合的生产注册入口：连接集合服务、集合视图、配置视图和命令。
+ * 初始化 Promise 由 extension.ts 继续交给 TODO，确保依赖集合配置的启动行为在恢复完成后执行。
+ * 命令和视图标识还需与 package.json 保持一致；修改注册代码不能只检查 TypeScript 编译。
+ */
 import * as vscode from 'vscode';
 import { ConfigurationTreeNode, ConfigurationTreeProvider } from '../configuration/configurationTreeProvider';
 import { CatalogTabSettingKey, CatalogTodoSettingKey, ProjectCatalogServiceV2, ResolvedCatalogProject } from './catalogServiceV2';

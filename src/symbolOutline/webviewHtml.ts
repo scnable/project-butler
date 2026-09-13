@@ -184,14 +184,14 @@ export function getSymbolOutlineHtml(
       border-left-color: var(--outline-current);
     }
     .symbol-row.context { opacity: 0.8; }
-    .caret { flex: 0 0 18px; width: 18px; height: 18px; padding: 0; border: 0; color: inherit; background: none; cursor: pointer; }
+    .caret { flex: 0 0 calc(18px * var(--outline-scale)); width: calc(18px * var(--outline-scale)); height: calc(18px * var(--outline-scale)); padding: 0; border: 0; color: inherit; background: none; cursor: pointer; }
     .caret.empty { visibility: hidden; }
     .kind-icon {
       display: inline-block;
       flex: 0 0 auto;
-      width: 18px;
-      height: 18px;
-      margin-right: 4px;
+      width: calc(18px * var(--outline-scale));
+      height: calc(18px * var(--outline-scale));
+      margin-right: calc(4px * var(--outline-scale));
       color: var(--vscode-symbolIcon-functionForeground, var(--outline-current));
       background-position: center;
       background-repeat: no-repeat;
@@ -209,9 +209,9 @@ export function getSymbolOutlineHtml(
     .state-icon {
       display: inline-block;
       flex: 0 0 auto;
-      width: 8px;
-      height: 8px;
-      margin-left: 4px;
+      width: calc(8px * var(--outline-scale));
+      height: calc(8px * var(--outline-scale));
+      margin-left: calc(4px * var(--outline-scale));
       background-position: center;
       background-repeat: no-repeat;
       background-size: contain;
@@ -425,7 +425,7 @@ export function getSymbolOutlineHtml(
         + (symbol.isContext ? ' context' : '');
       row.dataset.id = symbol.id;
       row.dataset.parent = symbol.parentPath;
-      row.style.paddingLeft = String(4 + depth * 13) + 'px';
+      row.style.paddingLeft = 'calc(' + String(4 + depth * 13) + 'px * var(--outline-scale))';
       row.setAttribute('role', 'treeitem');
       row.setAttribute('tabindex', '-1');
       row.setAttribute('aria-level', String(depth + 1));

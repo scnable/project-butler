@@ -1,3 +1,8 @@
+/**
+ * TODO 的有效配置与解析选项入口；由 extension.ts 绑定当前集合配置来源。
+ * 可覆盖项按工作区、集合、全局、默认值取值；个人身份、查看项目已有标记和高亮直接读取个人配置。
+ * 扫描、实时解析与视图筛选应使用同一身份规则，避免扫描时有结果、完成后却被视图全部过滤。
+ */
 import * as vscode from 'vscode';
 import { getTodoCommentSyntax, inferTodoLanguageId } from './todoCommentSyntax';
 import { createTodoTagDefinitions, normalizeTodoTagNames } from './todoTags';

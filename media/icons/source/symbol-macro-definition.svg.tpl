@@ -1,4 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
-  <path d="M6.5 4.5 5 19.5M11.5 4.5 10 19.5M2.5 9h11M2 15h11" stroke="{{primary}}" stroke-width="2.7" stroke-linecap="round"/>
-  <path d="M15.5 5v14H18a5 7 0 0 0 0-14z" stroke="{{primary}}" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M7.08 5.85 5.85 18.15M11.18 5.85 9.95 18.15M3.8 9.54h9.02M3.39 14.46h9.02" stroke="{{primary}}" stroke-width="2.7" stroke-linecap="round"/>
+  <path d="M14.46 6.26v11.48h2.05a4.1 5.74 0 0 0 0-11.48z" stroke="{{primary}}" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

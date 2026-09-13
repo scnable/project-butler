@@ -1,3 +1,8 @@
+/**
+ * 通用的分批文件处理引擎：控制读取并发、结果上限、取消检查和进度回调。
+ * 文件发现与编码处理由 todoScanner 提供，标记身份和语法判断由解析器负责。
+ * 调大并发会同时增加驻留内存中的文件文本；优化速度时不能只看耗时而忽略大文件和取消场景。
+ */
 export const TODO_SCAN_CONCURRENCY = 8;
 export const TODO_SCAN_MAX_RESULTS = 5_000;
 

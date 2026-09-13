@@ -38,4 +38,4 @@ export interface TodoParseOptions {
 }
 
 export type TodoScope = 'workspace' | 'currentFile';
-export type TodoGrouping = 'file' | 'tag';
+export type TodoGrouping = 'category' | 'tag';

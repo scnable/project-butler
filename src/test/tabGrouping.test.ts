@@ -4,6 +4,7 @@ import {
   GroupableTab,
   isSameOrder,
   moveNonProjectTabsToTail,
+  planSingleTabPlacement,
 } from '../tabManagement/tabGrouping';
 
 function tab(
@@ -47,6 +48,38 @@ describe('非项目标签稳定移至末尾', () => {
   it('比较当前顺序和目标顺序', () => {
     assert.equal(isSameOrder(['a', 'b'], ['a', 'b']), true);
     assert.equal(isSameOrder(['a', 'b'], ['b', 'a']), false);
+  });
+
+  it('新外部标签从头部一次定位到末尾', () => {
+    assert.deepEqual(planSingleTabPlacement([
+      tab('external', 'external'),
+      tab('project1'),
+      tab('project2'),
+      tab('project3'),
+    ], 'external'), { kind: 'move', targetIndex: 3 });
+  });
+
+  it('新项目标签从外部尾段后方一次插入分区边界', () => {
+    assert.deepEqual(planSingleTabPlacement([
+      tab('project1'),
+      tab('external1', 'external'),
+      tab('project2'),
+      tab('external2', 'external'),
+    ], 'project2'), { kind: 'move', targetIndex: 1 });
+  });
+
+  it('其余标签已有历史乱序时回退完整整理', () => {
+    assert.deepEqual(planSingleTabPlacement([
+      tab('external1', 'external'),
+      tab('project1'),
+      tab('external2', 'external'),
+    ], 'external2'), { kind: 'reconcile' });
+  });
+
+  it('标签已在目标位置或已经关闭时无需移动', () => {
+    const tabs = [tab('project'), tab('external', 'external')];
+    assert.deepEqual(planSingleTabPlacement(tabs, 'external'), { kind: 'unchanged' });
+    assert.deepEqual(planSingleTabPlacement(tabs, 'closed'), { kind: 'missing' });
   });
 
 });

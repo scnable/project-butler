@@ -8,6 +8,7 @@ const RESTORE_KEY = 'projectManager.openedFilesView.nativeOpenEditorsRestore';
 const COMMAND_HIDE_KEY = 'projectManager.openedFilesView.nativeOpenEditorsHiddenByCommand';
 const NATIVE_VIEW_REMOVE_COMMAND = 'workbench.explorer.openEditorsView.removeView';
 const NATIVE_VIEW_OPEN_COMMAND = 'workbench.explorer.openEditorsView.open';
+const NATIVE_VIEW_FOCUS_COMMAND = 'workbench.explorer.openEditorsView.focus';
 
 interface RestoreRecord {
   readonly target: 'global' | 'workspace';
@@ -86,9 +87,12 @@ export class OpenedFilesViewModeService implements vscode.Disposable {
     const hiddenByCommand = this.state.get<boolean>(COMMAND_HIDE_KEY, false);
     if (hiddenByCommand) {
       const commands = await vscode.commands.getCommands(true);
-      if (commands.includes(NATIVE_VIEW_OPEN_COMMAND)) {
+      // 旧版可能只注册 focus；仅执行实际存在的视图命令，不以隐藏记录推断真实可见性。
+      const restoreCommand = [NATIVE_VIEW_OPEN_COMMAND, NATIVE_VIEW_FOCUS_COMMAND]
+        .find((command) => commands.includes(command));
+      if (restoreCommand !== undefined) {
         try {
-          await vscode.commands.executeCommand(NATIVE_VIEW_OPEN_COMMAND);
+          await vscode.commands.executeCommand(restoreCommand);
           await this.state.update(COMMAND_HIDE_KEY, undefined);
           this.output.appendLine('已通过 VS Code 原生视图命令恢复“打开的编辑器”。');
           if (showMessage && this.interaction.showModalInformation !== undefined) {
@@ -99,12 +103,12 @@ export class OpenedFilesViewModeService implements vscode.Disposable {
           return;
         } catch (error) {
           this.output.appendLine(`通过原生视图命令恢复“打开的编辑器”失败：${error instanceof Error ? error.message : String(error)}`);
-          if (showMessage) await this.interaction.showWarning('恢复原生“打开的编辑器”失败，请在资源管理器的“视图”菜单中手动勾选。');
+          if (showMessage) await this.showManualRestoreWarning('恢复原生“打开的编辑器”命令执行失败。');
           return;
         }
       }
       this.output.appendLine('当前 VS Code 未注册原生“打开的编辑器”恢复命令。');
-      if (showMessage) await this.showManualHideWarning('当前 VS Code 无法通过已注册命令恢复原生“打开的编辑器”。');
+      if (showMessage) await this.showManualRestoreWarning('当前 VS Code 未注册可用的原生视图恢复命令。');
       return;
     }
     const record = this.state.get<RestoreRecord>(RESTORE_KEY);
@@ -224,6 +228,12 @@ export class OpenedFilesViewModeService implements vscode.Disposable {
     await this.interaction.showWarning(
       `${reason} 插件无法再通过公开 API 自动隐藏该视图。请在原生“打开的编辑器”标题处右键，或打开资源管理器的“视图”菜单，手动取消显示“打开的编辑器”。`,
     );
+  }
+
+  private async showManualRestoreWarning(reason: string): Promise<void> {
+    const message = `${reason} 已保留恢复记录，请在资源管理器的“视图”菜单中手动勾选“打开的编辑器”。`;
+    if (this.interaction.showModalWarning) await this.interaction.showModalWarning(message);
+    else await this.interaction.showWarning(message);
   }
 }
 

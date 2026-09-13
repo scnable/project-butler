@@ -1,3 +1,8 @@
+/**
+ * 标签配置的统一取值入口，同时返回来源供配置栏解释。
+ * 优先级依次为工作区显式设置、集合设置、全局显式设置、旧版个人设置、默认值。
+ * 必须使用 inspect 区分显式值与 VS Code 合并后的默认值，并保留 false；不能用逻辑或代替空值合并。
+ */
 import * as vscode from 'vscode';
 import {
   CatalogTabSettings,

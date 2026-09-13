@@ -5,6 +5,7 @@ import * as vscode from 'vscode';
 import { applyPersonalSettingValue } from '../configuration/configurationTreeProvider';
 import { getWorkspaceRelativePath } from '../shared/uri';
 import { isSameOrder, moveNonProjectTabsToTail } from '../tabManagement/tabGrouping';
+import { OpenedFilesViewModeService } from '../tabManagement/openedFilesViewModeService';
 import {
   closeAllEditors,
   createCatalogForWorkspace,
@@ -287,8 +288,20 @@ suite('标签页自动与手动整理', () => {
       await api.openedFilesTree.modeService.requestNativeMutualExclusion();
       if (api.openedFilesTree.modeService.getCommandHideStateForIntegrationTest()) {
         assert.ok(information.called, '支持原生视图命令的版本应显示成功反馈');
-        await api.openedFilesTree.modeService.restoreNativeOpenEditors(false);
-        assert.equal(api.openedFilesTree.modeService.getCommandHideStateForIntegrationTest(), false);
+        const registered = await vscode.commands.getCommands(true);
+        const canRestore = ['workbench.explorer.openEditorsView.open', 'workbench.explorer.openEditorsView.focus']
+          .some((command) => registered.includes(command));
+        const warningsBefore = warnings.callCount;
+        await api.openedFilesTree.modeService.restoreNativeOpenEditors();
+        if (canRestore) {
+          assert.equal(api.openedFilesTree.modeService.getCommandHideStateForIntegrationTest(), false);
+        } else {
+          assert.equal(api.openedFilesTree.modeService.getCommandHideStateForIntegrationTest(), true, '无恢复命令不得清空记录');
+          assert.equal(warnings.callCount, warningsBefore + 1);
+          assert.match(String(warnings.lastCall.args[0]), /手动勾选/);
+          assert.doesNotMatch(String(warnings.lastCall.args[0]), /取消显示/);
+          assert.equal(warnings.lastCall.args[1]?.modal, true);
+        }
         return;
       }
       const current = vscode.workspace.getConfiguration('explorer').get<number>('openEditors.visible');
@@ -305,6 +318,46 @@ suite('标签页自动与手动整理', () => {
     } finally {
       sandbox.restore();
     }
+  });
+
+  test('INT-234 原生视图恢复支持 focus，缺失或失败保留记录并提示手动恢复', async () => {
+    const api = await getApi();
+    const sandbox = sinon.createSandbox();
+    const values = new Map<string, unknown>();
+    const hiddenKey = 'projectManager.openedFilesView.nativeOpenEditorsHiddenByCommand';
+    const state = {
+      get: (key: string, fallback?: unknown) => values.get(key) ?? fallback,
+      update: async (key: string, value: unknown) => { values.set(key, value); },
+    } as unknown as vscode.Memento;
+    const messages: string[] = [];
+    const service = new OpenedFilesViewModeService(state, api.output, {
+      async confirmHideNative() { return false; },
+      async showInformation() {},
+      async showWarning() { assert.fail('恢复提示应优先使用居中弹窗'); },
+      async showModalWarning(message) { messages.push(message); },
+    });
+    try {
+      await delay(30);
+      const commands = sandbox.stub(vscode.commands, 'getCommands').resolves([]);
+      const execute = sandbox.stub(vscode.commands, 'executeCommand').resolves(undefined);
+      values.set(hiddenKey, true);
+      await service.restoreNativeOpenEditors();
+      assert.equal(service.getCommandHideStateForIntegrationTest(), true);
+      assert.equal(execute.callCount, 0);
+      assert.match(messages[0] ?? '', /手动勾选/);
+      assert.doesNotMatch(messages[0] ?? '', /取消显示/);
+
+      commands.resolves(['workbench.explorer.openEditorsView.focus']);
+      execute.rejects(new Error('模拟恢复失败'));
+      await service.restoreNativeOpenEditors();
+      assert.equal(service.getCommandHideStateForIntegrationTest(), true);
+      assert.match(messages[1] ?? '', /执行失败.*保留恢复记录/);
+
+      execute.resolves(undefined);
+      await service.restoreNativeOpenEditors(false);
+      assert.equal(execute.lastCall.args[0], 'workbench.explorer.openEditorsView.focus');
+      assert.equal(service.getCommandHideStateForIntegrationTest(), false);
+    } finally { service.dispose(); sandbox.restore(); }
   });
 
   test('INT-184 前台打开外部文件后整理仍保持该文件为活动页', async () => {
@@ -331,6 +384,47 @@ suite('标签页自动与手动整理', () => {
     await api.tabs.waitForIdleForIntegrationTest();
     assert.equal(vscode.window.activeTextEditor?.document.uri.toString(), project.toString());
     assert.equal(baseName(tabUris().at(-1) ?? ''), 'outside.txt');
+  });
+
+  test('INT-227 前部打开外部文件时直接移到末尾且不逐项激活项目文件', async () => {
+    const api = await getApi();
+    const editorConfiguration = vscode.workspace.getConfiguration('workbench.editor');
+    const originalOpenPositioning = editorConfiguration.inspect<string>('openPositioning')?.workspaceValue;
+    const first = projectUri(api, 'test-fixtures/workspace-one/README.md');
+    const second = projectUri(api, 'test-fixtures/workspace-one/src/app.ts');
+    const third = projectUri(api, 'test-fixtures/workspace-one/normal.txt');
+    const external = projectUri(api, 'test-fixtures/external/outside.txt');
+
+    await editorConfiguration.update('openPositioning', 'right', vscode.ConfigurationTarget.Workspace);
+    try {
+      await vscode.workspace.getConfiguration('projectManager.tabs').update('autoOrganize', true, vscode.ConfigurationTarget.Workspace);
+      await openText(first);
+      await openText(second);
+      await openText(third);
+      await vscode.window.showTextDocument(first, { preview: false });
+      await api.tabs.waitForIdleForIntegrationTest();
+
+      const activations: string[] = [];
+      const listener = vscode.window.onDidChangeActiveTextEditor((editor) => {
+        if (editor !== undefined) activations.push(editor.document.uri.toString());
+      });
+      try {
+        await openText(external);
+        await api.tabs.waitForIdleForIntegrationTest();
+      } finally {
+        listener.dispose();
+      }
+
+      assert.equal(baseName(tabUris().at(-1) ?? ''), 'outside.txt');
+      assert.equal(vscode.window.activeTextEditor?.document.uri.toString(), external.toString());
+      assert.equal(
+        activations.some((uri) => uri === second.toString() || uri === third.toString()),
+        false,
+        `整理过程中不应依次激活中间项目文件；实际激活：${activations.join(' | ')}`,
+      );
+    } finally {
+      await editorConfiguration.update('openPositioning', originalOpenPositioning, vscode.ConfigurationTarget.Workspace);
+    }
   });
 
   test('INT-186 记录当前 VS Code 可调用的原生打开编辑器视图命令', async () => {
@@ -383,7 +477,7 @@ suite('标签页自动与手动整理', () => {
   });
 
   test('INT-191 标题栏只提供文字形式的隐藏原生视图操作', () => {
-    const extension = vscode.extensions.getExtension('local-development.project-butler');
+    const extension = vscode.extensions.getExtension('scnable.catlas-hub');
     assert.ok(extension);
     const contributes = extension.packageJSON.contributes as {
       commands: Array<{ command: string; title: string; icon?: string }>;
@@ -393,7 +487,7 @@ suite('标签页自动与手动整理', () => {
     assert.deepEqual(command, {
       command: 'projectManager.hideNativeOpenEditors',
       title: '隐藏原生打开的编辑器',
-      category: '项目管家',
+      category: 'CAtlas Hub',
     });
     const titleActions = contributes.menus['view/title']
       .filter((item) => item.when === 'view == projectManager.openedFilesView');

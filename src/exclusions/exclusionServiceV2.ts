@@ -1,4 +1,9 @@
 import * as path from 'node:path';
+/**
+ * 屏蔽资源通过 VS Code 的文件、搜索和监听排除配置实现，不删除实际源码。
+ * 合并父子排除项时保留恢复信息，取消屏蔽不能直接覆盖用户原先已有的规则。
+ * 排除配置会影响 TODO 的文件发现与监听；修改屏蔽行为时也要检查未打开文件的扫描场景。
+ */
 import * as vscode from 'vscode';
 import { buildExclusionPatterns, buildFileTypeExclusionPattern, type ExclusionPatternSet, type ResourceKind } from './exclusionPatterns';
 import {

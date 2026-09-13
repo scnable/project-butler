@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- 商店专用图稿：蓝色 C、独立青绿色短弧、内收文字；不用于侧栏小图标。 -->
+  <rect width="1024" height="1024" fill="#FFFFFF"/>
+  <path d="M 721.889 617.738 C 673.486 721.537 557.546 775.601 446.919 745.958 C 336.292 716.316 262.916 611.525 272.898 497.431 C 282.880 383.338 373.338 292.880 487.431 282.898 C 498.378 281.940 509.378 281.748 520.351 282.323" fill="none" stroke="#1973FA" stroke-width="104"/>
+  <path d="M 548.981 285.585 C 629.123 299.717 696.331 354.140 726.815 429.593" fill="none" stroke="#1ABBB9" stroke-width="104"/>
+  <text x="354" y="553" font-family="Arial" font-weight="bold" font-size="96" textLength="436" lengthAdjust="spacingAndGlyphs" fill="#07152F">Atlas Hub</text>
+</svg>

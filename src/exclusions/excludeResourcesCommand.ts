@@ -24,7 +24,7 @@ export function registerExcludeResourcesCommand(
           if (result.resourceCount === 0) {
             if (result.skippedCount > 0) {
               await vscode.window.showWarningMessage(
-                `没有可屏蔽的资源，已跳过 ${result.skippedCount} 项。详情请查看“项目管家”输出。`,
+                `没有可屏蔽的资源，已跳过 ${result.skippedCount} 项。详情请查看“CAtlas Hub”输出。`,
               );
             }
             return;

@@ -1,3 +1,8 @@
+/**
+ * TODO 的内存数据集合，供扫描器写入、视图和装饰读取；不负责扫描文件或保存用户配置。
+ * 修订号用于区分全量扫描开始前后的更改，防止旧扫描把刚添加的标记抹掉或把刚删除的标记恢复。
+ * 无匹配的文件也可能需要保留修订记录；修改删除逻辑时，应同时检查 removeAtRevision 与 reconcile。
+ */
 import { TodoMatch, TodoResourceResult } from './todoTypes';
 
 export interface TodoIndexSnapshot {
@@ -37,6 +42,13 @@ export class TodoIndex {
     return this.entries.delete(uri);
   }
 
+  public removeAtRevision(uri: string, revision: number): boolean {
+    const previousRevision = this.revisions.get(uri);
+    if (previousRevision !== undefined && previousRevision > revision) return false;
+    this.revisions.set(uri, revision);
+    return this.entries.delete(uri);
+  }
+
   public clear(): void {
     this.entries.clear();
     this.revisions.clear();
@@ -55,6 +67,29 @@ export class TodoIndex {
       this.entries.set(entry.uri, { ...entry, matches: [...entry.matches] });
     }
     for (const [uri, revision] of snapshot.revisions) this.revisions.set(uri, revision);
+  }
+
+  /**
+   * 原子应用一次完整扫描结果，同时保留扫描开始后产生的实时文档修订。
+   */
+  public reconcile(snapshot: TodoIndexSnapshot, scanRevision: number): void {
+    const currentEntries = new Map(this.entries);
+    const currentRevisions = new Map(this.revisions);
+
+    this.entries.clear();
+    this.revisions.clear();
+    for (const entry of snapshot.entries) {
+      this.entries.set(entry.uri, { ...entry, matches: [...entry.matches] });
+    }
+    for (const [uri, revision] of snapshot.revisions) this.revisions.set(uri, revision);
+
+    for (const [uri, revision] of currentRevisions) {
+      if (revision <= scanRevision) continue;
+      this.revisions.set(uri, revision);
+      const currentEntry = currentEntries.get(uri);
+      if (currentEntry === undefined) this.entries.delete(uri);
+      else this.entries.set(uri, { ...currentEntry, matches: [...currentEntry.matches] });
+    }
   }
 
   public get(uri: string): TodoResourceResult | undefined {

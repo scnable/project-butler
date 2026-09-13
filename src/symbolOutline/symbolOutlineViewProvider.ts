@@ -1,3 +1,9 @@
+/**
+ * 增强大纲协调层：获取语言服务符号，补充条件编译信息，再转换为 Webview 展示与跳转数据。
+ * 与 symbolModel、outlineEnhancements、webviewHtml 分工；前后端消息名称和字段需要同步修改。
+ * 语言服务可能延迟返回，requestSequence 防止旧文件结果覆盖新文件；缓存上限避免持续浏览积累符号数据。
+ * 原生大纲是否可见不能作为可靠状态读取；提示用户手动隐藏不等于已成功关闭原生视图。
+ */
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { ProjectFeatureConfigurationSource } from '../configuration/configurationTypes';
@@ -335,7 +341,7 @@ export class SymbolOutlineViewProvider implements vscode.WebviewViewProvider, vs
       {
         label: '$(list-tree) 仅使用增强大纲',
         ...(current === 'enhanced' ? { description: '当前使用' } : {}),
-        detail: '增强大纲默认显示在“项目管家”插件侧栏；面板内会常驻提示如何手动隐藏原生大纲。',
+        detail: '增强大纲默认显示在“CAtlas Hub”插件侧栏；面板内会常驻提示如何手动隐藏原生大纲。',
         value: 'enhanced',
       },
       {
@@ -793,8 +799,8 @@ class LegacyOutlineMigrationViewProvider implements vscode.WebviewViewProvider, 
 <body>
   <div class="notice">
     <strong>增强函数大纲已迁移</strong>
-    <p>完整大纲现在位于“项目管家”插件侧栏。此资源管理器视图仅用于帮助已有用户找到新位置。</p>
-    <button id="open">打开项目管家中的增强大纲</button>
+    <p>完整大纲现在位于“CAtlas Hub”插件侧栏。此资源管理器视图仅用于帮助已有用户找到新位置。</p>
+    <button id="open">打开CAtlas Hub中的增强大纲</button>
   </div>
   <script nonce="${nonce}">
     const vscode = acquireVsCodeApi();
@@ -925,7 +931,7 @@ async function focusEnhancedOutlineView(): Promise<void> {
   try {
     await vscode.commands.executeCommand(`${VIEW_ID}.focus`);
   } catch (error) {
-    await vscode.window.showInformationMessage('无法自动定位增强函数大纲，请打开“项目管家”插件侧栏后选择“增强函数大纲”。');
+    await vscode.window.showInformationMessage('无法自动定位增强函数大纲，请打开“CAtlas Hub”插件侧栏后选择“增强函数大纲”。');
   }
 }
 
@@ -953,7 +959,7 @@ async function showLocationHintOnce(
     await focusEnhancedOutlineView();
   }
   const selected = await vscode.window.showInformationMessage(
-    '增强函数大纲现在位于“项目管家”插件侧栏并已自动展开。也可以右键大纲标题，将它移动到右侧“辅助侧栏”。',
+    '增强函数大纲现在位于“CAtlas Hub”插件侧栏并已自动展开。也可以右键大纲标题，将它移动到右侧“辅助侧栏”。',
     '打开增强大纲',
     '查看移动方法',
   );
@@ -963,7 +969,7 @@ async function showLocationHintOnce(
   }
   if (selected === '查看移动方法') {
     await vscode.window.showInformationMessage(
-      '先执行“视图: 切换辅助侧栏可见性”，再打开“项目管家”侧栏，右键“增强函数大纲”标题，选择“移动视图”→“辅助侧栏”。以后执行“项目管家: 打开/定位增强函数大纲”只会聚焦这一份大纲。',
+      '先执行“视图: 切换辅助侧栏可见性”，再打开“CAtlas Hub”侧栏，右键“增强函数大纲”标题，选择“移动视图”→“辅助侧栏”。以后执行“CAtlas Hub: 打开/定位增强函数大纲”只会聚焦这一份大纲。',
       { modal: true },
     );
   }

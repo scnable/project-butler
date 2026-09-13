@@ -1,3 +1,8 @@
+/**
+ * 纯文本标记解析：依据语言注释规则、关键词和身份选项生成标记，不执行文件访问或刷新视图。
+ * 这里不是完整语言语法分析器；新增语法支持需配合 todoCommentSyntax 和解析测试验证字符串、块注释等边界。
+ * 输出位置沿用 JavaScript 字符串索引和零起始行号，供 VS Code 跳转与编辑使用；不要改成字节偏移。
+ */
 import { TodoMatch, TodoParseOptions } from './todoTypes';
 import { isMyTodoOwner } from './todoOwner';
 
